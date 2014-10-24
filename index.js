@@ -1,7 +1,7 @@
 'use strict';
 /*
  * RESP.js
- * https://github.com/teambition/merge2
+ * https://github.com/zensh/resp.js
  *
  * Copyright (c) 2014 Yan Qing
  * Licensed under the MIT license.
@@ -15,8 +15,9 @@ exports.stringify = stringify;
 exports.Resp = Resp;
 
 exports.parse = function (str, returnBuffers) {
-  var result = parseBuffer(new Buffer(str), 0, returnBuffers);
-  if (!result) return null;
+  var buffer = new Buffer(str);
+  var result = parseBuffer(buffer, 0, returnBuffers);
+  if (!result || result.index < buffer.length) throw new Error('Parse "' + str + '" fail');
   if (result instanceof Error) throw result;
   return result.content;
 };
@@ -31,7 +32,8 @@ function stringify(val) {
     case 'number':
       return ':' + val + CRLF;
     case 'string':
-      return '$' + val.length + CRLF + val + CRLF;
+      if (val.indexOf('\r') < 0 && val.indexOf('\n') < 0) return '+' + val + CRLF;
+      return '$' + Buffer.byteLength(val, 'utf8') + CRLF + val + CRLF;
   }
 
   if (util.isArray(val)) {
@@ -40,12 +42,8 @@ function stringify(val) {
     return str;
   }
 
-  if (util.isBuffer(val)) {
-    str = val.utf8Slice(0, val.length);
-    return '$' + str.length + CRLF + str + CRLF;
-  }
-
-  if (util.isError(val)) return '-' + val.name + ' ' + val.message + CRLF;
+  if (Buffer.isBuffer(val)) return '$' + val.length + CRLF + val.toString() + CRLF;
+  if (util.isError(val)) return '-' + val.name + ': ' + val.message + CRLF;
 
   throw new Error('Invalid value: ' + val);
 }
@@ -74,20 +72,20 @@ function parseBuffer(buffer, index, returnBuffers) {
       return result;
 
     case 45:  // '-'
-      if (!result.content.length) return new Error('Invalid Chunk: parse "-" fail');
+      if (!result.content.length) return new Error('Parse "-" fail');
       result.content = new Error(result.content);
       return result;
 
     case 58:  // ':'
       result.content = +(result.content);
-      if (result.content !== result.content) return new Error('Invalid Chunk: parse ":" fail');
+      if (result.content !== result.content) return new Error('Parse ":" fail');
       return result;
 
     case 36:  // '$'
       len = +(result.content);
-      if (!result.content.length || len !== len) return new Error('Invalid Chunk: parse "$" fail, invalid length');
+      if (!result.content.length || len !== len) return new Error('Parse "$" fail, invalid length');
       if (len === -1) result.content = returnBuffers ? new Buffer(0) : null;
-      else if (!isCRLF(buffer, result.index + len)) return new Error('Invalid Chunk: parse "$" fail, invalid CRLF');
+      else if (!isCRLF(buffer, result.index + len)) return new Error('Parse "$" fail, invalid CRLF');
       else {
         result.content = buffer[returnBuffers ? 'slice' : 'utf8Slice'](result.index, result.index + len);
         result.index = result.index + len + 2;
@@ -96,7 +94,7 @@ function parseBuffer(buffer, index, returnBuffers) {
 
     case 42:  // '*'
       len = +(result.content);
-      if (!result.content.length || len !== len) return new Error('Invalid Chunk: parse "*" fail, invalid length');
+      if (!result.content.length || len !== len) return new Error('Parse "*" fail, invalid length');
       if (len === -1) result.content = null;
       else if (len === 0) result.content = [];
       else {
@@ -117,8 +115,10 @@ function parseBuffer(buffer, index, returnBuffers) {
 
 function Resp(options) {
   if (!(this instanceof Resp)) return new Resp(options);
-
+  
+  options = options || {};
   if (options.objectMode !== false) options.objectMode = true;
+  else options.defaultEncoding = 'binary';
 
   Stream.Readable.call(this, options);
 
@@ -131,6 +131,9 @@ function Resp(options) {
 util.inherits(Resp, Stream.Readable);
 
 Resp.prototype.feed = function (buffer) {
+  if (!buffer) return this.push(null);
+  if (!Buffer.isBuffer(buffer)) throw new TypeError('Invalid buffer chunk');
+
   if (!this._buffer) this._buffer = buffer;
   else {
     var ret = this._buffer.length - this._index;
