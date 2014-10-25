@@ -115,7 +115,7 @@ function parseBuffer(buffer, index, returnBuffers) {
 
 function Resp(options) {
   if (!(this instanceof Resp)) return new Resp(options);
-  
+
   options = options || {};
   if (options.objectMode !== false) options.objectMode = true;
   else options.defaultEncoding = 'binary';
@@ -132,7 +132,7 @@ util.inherits(Resp, Stream.Readable);
 
 Resp.prototype.feed = function (buffer) {
   if (!buffer) return this.push(null);
-  if (!Buffer.isBuffer(buffer)) throw new TypeError('Invalid buffer chunk');
+  if (!Buffer.isBuffer(buffer)) return this.emit('error', new TypeError('Invalid buffer chunk'));
 
   if (!this._buffer) this._buffer = buffer;
   else {
@@ -148,21 +148,28 @@ Resp.prototype.feed = function (buffer) {
   while (this._index < this._buffer.length) {
     var result = parseBuffer(this._buffer, this._index, this._returnBuffers);
     if (result == null) return this.emit('wait');
+    this._resCount++;
     if (result instanceof Error) {
-      this._index = 0;
-      this._buffer = null;
-      return this.emit('error', result);
+      this.emit('error', result);
+      clearStream(this);
+      if (this._resCount >= this._expectResCount) this.push(null);
+      return;
     }
     this._index = result.index;
     this.push(result.content);
-    if (++this._resCount >= this._expectResCount) {
+    if (this._resCount >= this._expectResCount) {
       if (this._index < this._buffer.length) this.emit('error', new Error('Data surplus'));
+      clearStream(this);
       return this.push(null);
     }
   }
-  this._index = 0;
-  this._buffer = null;
+  clearStream(this);
   return this.emit('wait');
 };
+
+function clearStream(stream) {
+  stream._index = 0;
+  stream._buffer = null;
+}
 
 Resp.prototype._read = function() {};

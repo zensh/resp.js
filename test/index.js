@@ -67,6 +67,7 @@ describe('resp.js', function () {
   it('resp.Resp()', function (done) {
     var result = [];
     var stream = resp.Resp();
+
     thunkStream(stream)(function () {
       should(result).be.eql([0, '2', '', '中文', [], [[]]]);
     })(done);
@@ -87,6 +88,7 @@ describe('resp.js', function () {
   it('resp.Resp({expectResCount: 3})', function (done) {
     var result = [];
     var stream = resp.Resp({expectResCount: 3});
+
     thunkStream(stream)(function () {
       should(result).be.eql(['中文', [1, null, '2'], [[null]]]);
     })(done);
@@ -98,5 +100,55 @@ describe('resp.js', function () {
     stream.feed(new Buffer(resp.stringify('中文')));
     stream.feed(new Buffer(resp.stringify([1, null, '2'])));
     stream.feed(new Buffer(resp.stringify([[null]])));
+  });
+
+  it('resp.Resp({objectMode: false})', function (done) {
+    var stream = resp.Resp({expectResCount: 2, objectMode: false});
+    thunkStream(stream)(done);
+
+    stream.on('data', function (data) {
+      should(Buffer.isBuffer(data)).be.equal(true);
+    });
+
+    stream.feed(new Buffer('$6\r\n中文\r\n'));
+    stream.feed(new Buffer(resp.stringify('abc')));
+  });
+
+  it('resp.Resp():Pipelining data', function (done) {
+    var result = [];
+    var stream = resp.Resp({expectResCount: 3});
+
+    thunkStream(stream)(function () {
+      should(result).be.eql(['中文', '', 123]);
+    })(done);
+
+    stream.on('data', function (data) {
+      result.push(data);
+    });
+
+    stream.feed(new Buffer('$6\r\n中文\r\n$0'));
+    stream.feed(new Buffer('\r\n\r\n'));
+    stream.feed(new Buffer(resp.stringify(123)));
+  });
+
+  it('resp.Resp():with error data', function (done) {
+    var result = [];
+    var stream = resp.Resp({expectResCount: 3});
+
+    thunkStream(stream, {error: false})(function () {
+      should(result).be.eql(['', '', 123]);
+    })(done);
+
+    stream.on('data', function (data) {
+      result.push(data);
+    });
+
+    stream.on('error', function (error) {
+      result.push('');
+    });
+
+    stream.feed(new Buffer('$6\r\n中文1\r\n$0'));
+    stream.feed(new Buffer('\r\n\r\n'));
+    stream.feed(new Buffer(resp.stringify(123)));
   });
 });

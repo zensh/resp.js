@@ -1,4 +1,4 @@
-RESP v0.1.0 [![Build Status](https://travis-ci.org/zensh/resp.js.svg)](https://travis-ci.org/zensh/resp.js)
+RESP v0.1.1 [![Build Status](https://travis-ci.org/zensh/resp.js.svg)](https://travis-ci.org/zensh/resp.js)
 ====
 > An implementation of REdis Serialization Protocol (RESP).
 
