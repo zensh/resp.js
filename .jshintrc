@@ -18,8 +18,8 @@
   "trailing": true,
   "eqnull": true,
 
-  "browser": true,
+  "browser": false,
   "devel": true,
-  "jquery": true,
+  "jquery": false,
   "node": true
 }

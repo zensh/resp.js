@@ -8,7 +8,7 @@
  */
 
 var util = require('util');
-var Stream = require('stream');
+var EventEmitter = require('events').EventEmitter;
 var CRLF = '\r\n';
 
 exports.stringify = stringify;
@@ -22,7 +22,7 @@ exports.parse = function (str, returnBuffers) {
   return result.content;
 };
 
-function stringify(val) {
+function stringify(val, forceBulkStrings) {
   var str = '';
   if (val == null || val !== val) return '$-1' + CRLF;
 
@@ -30,15 +30,16 @@ function stringify(val) {
     case 'boolean':
       return ':' + (+val) + CRLF;
     case 'number':
+      if (forceBulkStrings) return '$' + Buffer.byteLength(val + '', 'utf8') + CRLF + val + CRLF;
       return ':' + val + CRLF;
     case 'string':
-      if (val.indexOf('\r') < 0 && val.indexOf('\n') < 0) return '+' + val + CRLF;
+      if (!forceBulkStrings && val.indexOf('\r') < 0 && val.indexOf('\n') < 0) return '+' + val + CRLF;
       return '$' + Buffer.byteLength(val, 'utf8') + CRLF + val + CRLF;
   }
 
   if (util.isArray(val)) {
     str = '*' + val.length + CRLF;
-    for (var i = 0, l = val.length; i < l; i++) str += stringify(val[i]);
+    for (var i = 0, l = val.length; i < l; i++) str += stringify(val[i], forceBulkStrings);
     return str;
   }
 
@@ -116,22 +117,20 @@ function parseBuffer(buffer, index, returnBuffers) {
 function Resp(options) {
   if (!(this instanceof Resp)) return new Resp(options);
 
-  options = options || {};
-  if (options.objectMode !== false) options.objectMode = true;
-  else options.defaultEncoding = 'binary';
+  EventEmitter.call(this);
 
-  Stream.Readable.call(this, options);
-
-  this._expectResCount = options.expectResCount > 0 ? +options.expectResCount : Number.MAX_VALUE;
-  this._returnBuffers = !options.objectMode;
+  this.options = options || {};
   this._resCount = 0;
   this._index = 0;
   this._buffer = null;
+  this.options.expectResCount = this.options.expectResCount >= 1 ? +this.options.expectResCount : Number.MAX_VALUE;
 }
-util.inherits(Resp, Stream.Readable);
+util.inherits(Resp, EventEmitter);
 
 Resp.prototype.feed = function (buffer) {
-  if (!buffer) return this.push(null);
+  var returnBuffers = this.options.returnBuffers;
+  var expectResCount = +this.options.expectResCount;
+  if (!buffer) return this.emit('end');
   if (!Buffer.isBuffer(buffer)) return this.emit('error', new TypeError('Invalid buffer chunk'));
 
   if (!this._buffer) this._buffer = buffer;
@@ -146,30 +145,29 @@ Resp.prototype.feed = function (buffer) {
   }
 
   while (this._index < this._buffer.length) {
-    var result = parseBuffer(this._buffer, this._index, this._returnBuffers);
+    var result = parseBuffer(this._buffer, this._index, returnBuffers);
     if (result == null) return this.emit('wait');
     this._resCount++;
     if (result instanceof Error) {
       this.emit('error', result);
-      clearStream(this);
-      if (this._resCount >= this._expectResCount) this.push(null);
+      clearState(this);
+      if (this._resCount >= expectResCount) this.emit('end');
       return;
     }
     this._index = result.index;
-    this.push(result.content);
-    if (this._resCount >= this._expectResCount) {
+    if (returnBuffers && !Buffer.isBuffer(result.content)) result.content = new Buffer(result.content + '');
+    this.emit('data', result.content);
+    if (this._resCount >= expectResCount) {
       if (this._index < this._buffer.length) this.emit('error', new Error('Data surplus'));
-      clearStream(this);
-      return this.push(null);
+      clearState(this);
+      return this.emit('end');
     }
   }
-  clearStream(this);
+  clearState(this);
   return this.emit('wait');
 };
 
-function clearStream(stream) {
-  stream._index = 0;
-  stream._buffer = null;
+function clearState(ctx) {
+  ctx._index = 0;
+  ctx._buffer = null;
 }
-
-Resp.prototype._read = function() {};
