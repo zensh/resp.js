@@ -11,42 +11,98 @@ var util = require('util');
 var EventEmitter = require('events').EventEmitter;
 var CRLF = '\r\n';
 
-exports.stringify = stringify;
 exports.Resp = Resp;
 
-exports.parse = function (str, returnBuffers) {
-  var buffer = new Buffer(str);
+exports.parse = function (string, returnBuffers) {
+  var buffer = new Buffer(string);
   var result = parseBuffer(buffer, 0, returnBuffers);
-  if (!result || result.index < buffer.length) throw new Error('Parse "' + str + '" fail');
+  if (!result || result.index < buffer.length) throw new Error('Parse "' + string + '" fail');
   if (result instanceof Error) throw result;
   return result.content;
 };
 
+exports.stringify = function (value, forceBulkStrings) {
+  var str = stringify(value, forceBulkStrings);
+  if (!str) throw new Error('Invalid value: ' + value);
+  return str;
+};
+
+exports.bufferify = function (value) {
+  var buffer = bufferify(value);
+  if (!buffer) throw new Error('Invalid value: ' + value);
+  return buffer;
+};
+
+function bufferify(val) {
+  var index, buffer;
+  var str = stringify(val, true);
+
+  if (str) return new Buffer(str);
+  if (Buffer.isBuffer(val)) {
+    str = '$' + val.length + CRLF;
+    buffer = new Buffer(str.length + val.length + 2);
+    buffer.write(str);
+    val.copy(buffer, str.length);
+    buffer.write(CRLF, str.length + val.length);
+    return buffer;
+  }
+  if (!Array.isArray(val)) return false;
+
+  str = '*' + val.length + CRLF;
+  index = str.length;
+  buffer = new Buffer(Math.max(val.length, 1024) * 8);
+  buffer.write(str, 0);
+
+  for (var i = 0, len = val.length; i < len; i++) {
+    var subBuffer = bufferify(val[i]);
+    if (!subBuffer) return false;
+    if (subBuffer.length <= buffer.length - index) {
+      subBuffer.copy(buffer, index);
+      index += subBuffer.length;
+    } else {
+      var concatBuffer = new Buffer(index + subBuffer.length);
+      buffer.copy(concatBuffer, 0, 0, index);
+      subBuffer.copy(concatBuffer, index);
+      buffer = concatBuffer;
+      index = buffer.length;
+    }
+  }
+  return buffer.slice(0, index);
+}
+
 function stringify(val, forceBulkStrings) {
-  var str = '';
+  var str = '', _str = null;
   if (val == null || val !== val) return '$-1' + CRLF;
 
-  switch (typeof val) {
+  var type = typeof val;
+
+  if (forceBulkStrings && type !== 'object') {
+    val = val + '';
+    return '$' + Buffer.byteLength(val, 'utf8') + CRLF + val + CRLF;
+  }
+
+  switch (type) {
+    case 'string':
+      return '+' + val + CRLF;
     case 'boolean':
       return ':' + (+val) + CRLF;
     case 'number':
-      if (forceBulkStrings) return '$' + Buffer.byteLength(val + '', 'utf8') + CRLF + val + CRLF;
       return ':' + val + CRLF;
-    case 'string':
-      if (!forceBulkStrings && val.indexOf('\r') < 0 && val.indexOf('\n') < 0) return '+' + val + CRLF;
-      return '$' + Buffer.byteLength(val, 'utf8') + CRLF + val + CRLF;
   }
+
+  if (util.isError(val)) return '-' + val.name + ': ' + val.message + CRLF;
 
   if (util.isArray(val)) {
     str = '*' + val.length + CRLF;
-    for (var i = 0, l = val.length; i < l; i++) str += stringify(val[i], forceBulkStrings);
+    for (var i = 0, len = val.length; i < len; i++) {
+      _str = stringify(val[i], forceBulkStrings);
+      if (!_str) return false;
+      str += _str;
+    }
     return str;
   }
 
-  if (Buffer.isBuffer(val)) return '$' + val.length + CRLF + val.toString() + CRLF;
-  if (util.isError(val)) return '-' + val.name + ': ' + val.message + CRLF;
-
-  throw new Error('Invalid value: ' + val);
+  return false;
 }
 
 function isCRLF(buffer, index) {
@@ -85,7 +141,7 @@ function parseBuffer(buffer, index, returnBuffers) {
     case 36:  // '$'
       len = +(result.content);
       if (!result.content.length || len !== len) return new Error('Parse "$" fail, invalid length');
-      if (len === -1) result.content = returnBuffers ? new Buffer(0) : null;
+      if (len === -1) result.content = null;
       else if (!isCRLF(buffer, result.index + len)) return new Error('Parse "$" fail, invalid CRLF');
       else {
         result.content = buffer[returnBuffers ? 'slice' : 'utf8Slice'](result.index, result.index + len);
@@ -155,7 +211,6 @@ Resp.prototype.feed = function (buffer) {
       return;
     }
     this._index = result.index;
-    if (returnBuffers && !Buffer.isBuffer(result.content)) result.content = new Buffer(result.content + '');
     this.emit('data', result.content);
     if (this._resCount >= expectResCount) {
       if (this._index < this._buffer.length) this.emit('error', new Error('Data surplus'));

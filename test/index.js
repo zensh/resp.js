@@ -4,6 +4,15 @@
 var should = require('should'),
   resp = require('../index.js');
 
+function bufferEql(buffer1, buffer2) {
+  if (!Buffer.isBuffer(buffer1) || !Buffer.isBuffer(buffer2)) return false;
+  if (buffer1.length !== buffer2.length) return false;
+  for (var i = 0; i < buffer1.length; i++) {
+    if (buffer1[i] !== buffer2[i]) return false;
+  }
+  return true;
+}
+
 describe('resp.js', function () {
   it('resp.stringify(obj)', function (done) {
     should(resp.stringify(null)).be.equal('$-1\r\n');
@@ -15,13 +24,49 @@ describe('resp.js', function () {
     should(resp.stringify(-99)).be.equal(':-99\r\n');
     should(resp.stringify(new Error('error'))).be.equal('-Error: error\r\n');
     should(resp.stringify([])).be.equal('*0\r\n');
-    should(resp.stringify([[1, 2, 3], ['Foo', new Error('Bar')]])).be.equal('*2\r\n*3\r\n:1\r\n:2\r\n:3\r\n*2\r\n+Foo\r\n-Error: Bar\r\n');
+    should(resp.stringify([[1, 2, 3], ['Foo']])).be.equal('*2\r\n*3\r\n:1\r\n:2\r\n:3\r\n*1\r\n+Foo\r\n');
     should(resp.stringify(['foo', null, 'bar'])).be.equal('*3\r\n+foo\r\n$-1\r\n+bar\r\n');
-    should(resp.stringify(new Buffer('中文'))).be.equal('$6\r\n中文\r\n');
-    should(resp.stringify(new Buffer(0))).be.equal('$0\r\n\r\n');
+    // should(resp.stringify(new Buffer('中文'))).be.equal('$6\r\n中文\r\n');
+    // should(resp.stringify(new Buffer(0))).be.equal('$0\r\n\r\n');
     should(function () { resp.stringify({}); }).throw();
+    should(function () { resp.stringify(new Buffer('123')); }).throw();
     should(function () { resp.stringify([1, {}]); }).throw();
     should(function () { resp.stringify(new Date()); }).throw();
+    done();
+  });
+
+  it('resp.stringify(obj, true)', function (done) {
+    should(resp.stringify(null, true)).be.equal('$-1\r\n');
+    should(resp.stringify(NaN, true)).be.equal('$-1\r\n');
+    should(resp.stringify('', true)).be.equal('$0\r\n\r\n');
+    should(resp.stringify('1', true)).be.equal('$1\r\n1\r\n');
+    should(resp.stringify('中文', true)).be.equal('$6\r\n中文\r\n');
+    should(resp.stringify(99, true)).be.equal('$2\r\n99\r\n');
+    should(resp.stringify(-99, true)).be.equal('$3\r\n-99\r\n');
+    should(resp.stringify(new Error('error'), true)).be.equal('-Error: error\r\n');
+    should(resp.stringify([], true)).be.equal('*0\r\n');
+    should(resp.stringify([[1, 2, 3], ['Foo']], true)).be.equal('*2\r\n*3\r\n$1\r\n1\r\n$1\r\n2\r\n$1\r\n3\r\n*1\r\n$3\r\nFoo\r\n');
+    should(resp.stringify(['foo', null, 'bar'], true)).be.equal('*3\r\n$3\r\nfoo\r\n$-1\r\n$3\r\nbar\r\n');
+    done();
+  });
+
+  it('resp.bufferify(obj)', function (done) {
+    should(bufferEql(resp.bufferify(null), new Buffer('$-1\r\n'))).be.equal(true);
+    should(bufferEql(resp.bufferify(NaN), new Buffer('$-1\r\n'))).be.equal(true);
+    should(bufferEql(resp.bufferify(''), new Buffer('$0\r\n\r\n'))).be.equal(true);
+    should(bufferEql(resp.bufferify('1'), new Buffer('$1\r\n1\r\n'))).be.equal(true);
+    should(bufferEql(resp.bufferify('中文'), new Buffer('$6\r\n中文\r\n'))).be.equal(true);
+    should(bufferEql(resp.bufferify(99), new Buffer('$2\r\n99\r\n'))).be.equal(true);
+    should(bufferEql(resp.bufferify(-99), new Buffer('$3\r\n-99\r\n'))).be.equal(true);
+    should(bufferEql(resp.bufferify(new Error('error')), new Buffer('-Error: error\r\n'))).be.equal(true);
+    should(bufferEql(resp.bufferify([]), new Buffer('*0\r\n'))).be.equal(true);
+    should(bufferEql(resp.bufferify([[1, 2, 3], ['Foo']]), new Buffer('*2\r\n*3\r\n$1\r\n1\r\n$1\r\n2\r\n$1\r\n3\r\n*1\r\n$3\r\nFoo\r\n'))).be.equal(true);
+    should(bufferEql(resp.bufferify(['foo', null, 'bar']), new Buffer('*3\r\n$3\r\nfoo\r\n$-1\r\n$3\r\nbar\r\n'))).be.equal(true);
+    should(bufferEql(resp.bufferify(new Buffer('中文')), new Buffer('$6\r\n中文\r\n'))).be.equal(true);
+    should(bufferEql(resp.bufferify([null, new Buffer('\x01\x02\x03')]), new Buffer('*2\r\n$-1\r\n$3\r\n\x01\x02\x03\r\n'))).be.equal(true);
+    should(function () { resp.bufferify({}); }).throw();
+    should(function () { resp.bufferify([1, {}]); }).throw();
+    should(function () { resp.bufferify(new Date()); }).throw();
     done();
   });
 
@@ -56,9 +101,18 @@ describe('resp.js', function () {
     should(resp.parse(resp.stringify([]))).be.eql([]);
     should(resp.parse(resp.stringify([[[]]]))).be.eql([[[]]]);
     should(resp.parse(resp.stringify([1, '2', ['3']]))).be.eql([1, '2', ['3']]);
-    var buf = resp.parse(resp.stringify(new Buffer(0)), true);
-    should(buf.length).be.equal(0);
-    should(buf.toString()).be.equal('');
+    done();
+  });
+
+  it('resp.parse(resp.bufferify(obj))', function (done) {
+    should(resp.parse(resp.bufferify(null))).be.equal(null);
+    should(resp.parse(resp.bufferify(1))).be.equal('1');
+    should(resp.parse(resp.bufferify('1'))).be.equal('1');
+    should(resp.parse(resp.bufferify('中文'))).be.equal('中文');
+    should(resp.parse(resp.bufferify([]))).be.eql([]);
+    should(resp.parse(resp.bufferify([[[]]]))).be.eql([[[]]]);
+    should(resp.parse(resp.bufferify([1, '2', ['3']]))).be.eql(['1', '2', ['3']]);
+    should(resp.parse(resp.bufferify([null, new Buffer('中文')]))).be.eql([null, '中文']);
     done();
   });
 
@@ -72,16 +126,16 @@ describe('resp.js', function () {
         if (result.length === 6) reply.feed(null);
       })
       .on('end', function () {
-        should(result).be.eql([0, '2', '', '中文', [], [[]]]);
+        should(result).be.eql(['0', '2', '', '中文', [], [[]]]);
         done();
       });
 
-    reply.feed(new Buffer(resp.stringify(0)));
-    reply.feed(new Buffer(resp.stringify('2')));
-    reply.feed(new Buffer(resp.stringify('')));
-    reply.feed(new Buffer(resp.stringify('中文')));
-    reply.feed(new Buffer(resp.stringify([])));
-    reply.feed(new Buffer(resp.stringify([[]])));
+    reply.feed(resp.bufferify(0));
+    reply.feed(resp.bufferify('2'));
+    reply.feed(resp.bufferify(''));
+    reply.feed(resp.bufferify('中文'));
+    reply.feed(resp.bufferify([]));
+    reply.feed(resp.bufferify([[]]));
   });
 
   it('resp.Resp({expectResCount: 3})', function (done) {
@@ -93,25 +147,26 @@ describe('resp.js', function () {
         result.push(data);
       })
       .on('end', function () {
-        should(result).be.eql(['中文', [1, null, '2'], [[null]]]);
+        should(result).be.eql(['中文', ['1', null, '2'], [[null]]]);
         done();
       });
 
-    reply.feed(new Buffer(resp.stringify('中文')));
-    reply.feed(new Buffer(resp.stringify([1, null, '2'])));
-    reply.feed(new Buffer(resp.stringify([[null]])));
+    reply.feed(resp.bufferify('中文'));
+    reply.feed(resp.bufferify([1, null, '2']));
+    reply.feed(resp.bufferify([[null]]));
   });
 
   it('resp.Resp({returnBuffers: true})', function (done) {
     var reply = resp.Resp({expectResCount: 2, returnBuffers: true});
 
-    reply.on('data', function (data) {
+    reply
+      .on('data', function (data) {
         should(Buffer.isBuffer(data)).be.equal(true);
       })
       .on('end', done);
 
     reply.feed(new Buffer('$6\r\n中文\r\n'));
-    reply.feed(new Buffer(resp.stringify('abc')));
+    reply.feed(resp.bufferify('abc'));
   });
 
   it('resp.Resp():Pipelining data', function (done) {
@@ -129,7 +184,7 @@ describe('resp.js', function () {
 
     reply.feed(new Buffer('$6\r\n中文\r\n$0'));
     reply.feed(new Buffer('\r\n\r\n'));
-    reply.feed(new Buffer(resp.stringify(123)));
+    reply.feed(resp.bufferify(123));
   });
 
   it('resp.Resp():with error data', function (done) {
@@ -151,6 +206,6 @@ describe('resp.js', function () {
 
     reply.feed(new Buffer('$6\r\n中文1\r\n$0'));
     reply.feed(new Buffer('\r\n\r\n'));
-    reply.feed(new Buffer(resp.stringify(123)));
+    reply.feed(resp.bufferify(123));
   });
 });
