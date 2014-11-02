@@ -170,59 +170,77 @@ function parseBuffer(buffer, index, returnBuffers) {
   return new Error('Invalid Chunk: parse fail');
 }
 
+function RespState(options) {
+  this.index = 0;
+  this.buffer = null;
+  this.ended = false;
+  this.resCount = 0;
+  this.expectResCount = 1;
+  this.returnBuffers = !!options.returnBuffers;
+}
+
 function Resp(options) {
   if (!(this instanceof Resp)) return new Resp(options);
-
+  options = options || {};
+  this._respState = new RespState(options);
+  this.autoEnd(options.expectResCount);
   EventEmitter.call(this);
-
-  this.options = options || {};
-  this._resCount = 0;
-  this._index = 0;
-  this._buffer = null;
-  this.options.expectResCount = this.options.expectResCount >= 1 ? +this.options.expectResCount : Number.MAX_VALUE;
 }
 util.inherits(Resp, EventEmitter);
 
 Resp.prototype.feed = function (buffer) {
-  var returnBuffers = this.options.returnBuffers;
-  var expectResCount = +this.options.expectResCount;
-  if (!buffer) return this.emit('end');
+  var state = this._respState;
+  if (state.ended) return this.emit('error', new TypeError('The resp was ended'));
+  if (!buffer) return this.end();
   if (!Buffer.isBuffer(buffer)) return this.emit('error', new TypeError('Invalid buffer chunk'));
 
-  if (!this._buffer) this._buffer = buffer;
+  if (!state.buffer) state.buffer = buffer;
   else {
-    var ret = this._buffer.length - this._index;
-    var _buffer = new Buffer(buffer.length + ret);
+    var ret = state.buffer.length - state.index;
+    var concatBuffer = new Buffer(buffer.length + ret);
 
-    this._buffer.copy(_buffer, 0, this._index);
-    buffer.copy(_buffer, ret);
-    this._buffer = _buffer;
-    this._index = 0;
+    state.buffer.copy(concatBuffer, 0, state.index);
+    buffer.copy(concatBuffer, ret);
+    state.buffer = concatBuffer;
+    state.index = 0;
   }
 
-  while (this._index < this._buffer.length) {
-    var result = parseBuffer(this._buffer, this._index, returnBuffers);
+  while (state.index < state.buffer.length) {
+    var result = parseBuffer(state.buffer, state.index, state.returnBuffers);
     if (result == null) return this.emit('wait');
-    this._resCount++;
+    state.resCount++;
     if (result instanceof Error) {
       this.emit('error', result);
       clearState(this);
-      if (this._resCount >= expectResCount) this.emit('end');
+      if (state.resCount >= state.expectResCount) this.end();
       return;
     }
-    this._index = result.index;
+    state.index = result.index;
     this.emit('data', result.content);
-    if (this._resCount >= expectResCount) {
-      if (this._index < this._buffer.length) this.emit('error', new Error('Data surplus'));
+    if (state.resCount >= state.expectResCount) {
+      if (state.index < state.buffer.length) this.emit('error', new Error('Data surplus'));
       clearState(this);
-      return this.emit('end');
+      return this.end();
     }
   }
   clearState(this);
   return this.emit('wait');
 };
 
+Resp.prototype.autoEnd = function (resCount) {
+  var state = this._respState;
+  if (resCount >= 1) state.expectResCount = state.resCount + resCount;  // limited Mode
+  else state.expectResCount = Number.MAX_VALUE; // infinite Mode
+};
+
+Resp.prototype.end = function (chunk) {
+  if (chunk && Buffer.isBuffer(chunk)) this.feed(chunk);
+  if (this._respState.ended) return;
+  this._respState.ended = true;
+  this.emit('end');
+};
+
 function clearState(ctx) {
-  ctx._index = 0;
-  ctx._buffer = null;
+  ctx._respState.index = 0;
+  ctx._respState.buffer = null;
 }
