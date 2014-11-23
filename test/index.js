@@ -178,7 +178,7 @@ describe('resp.js', function () {
         result.push(data);
       })
       .on('end', function () {
-        should(result).be.eql(['中文', '', 123]);
+        should(result).be.eql(['中文', '', '123']);
         done();
       });
 
@@ -193,14 +193,13 @@ describe('resp.js', function () {
 
     reply
       .on('data', function (data) {
-        console.log(345, data);
         result.push(data);
       })
       .on('error', function (error) {
         result.push('');
       })
       .on('end', function () {
-        should(result).be.eql(['', '', 123]);
+        should(result).be.eql(['', '', '123']);
         done();
       });
 
