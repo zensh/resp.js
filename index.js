@@ -16,22 +16,29 @@ exports.Resp = Resp;
 exports.parse = function (string, returnBuffers) {
   var buffer = new Buffer(string);
   var result = parseBuffer(buffer, 0, returnBuffers);
-  if (!result || result.index < buffer.length) throw new Error('Parse "' + string + '" fail');
+  if (!result || result.index < buffer.length) throw new RespError('Parse "' + string + '" fail');
   if (result instanceof Error) throw result;
   return result.content;
 };
 
 exports.stringify = function (value, forceBulkStrings) {
   var str = stringify(value, forceBulkStrings);
-  if (!str) throw new Error('Invalid value: ' + value);
+  if (!str) throw new RespError('Invalid value: ' + value);
   return str;
 };
 
 exports.bufferify = function (value) {
   var buffer = bufferify(value);
-  if (!buffer) throw new Error('Invalid value: ' + value);
+  if (!buffer) throw new RespError('Invalid value: ' + value);
   return buffer;
 };
+
+function RespError(message) {
+  Error.captureStackTrace(this, this.constructor);
+  this.message = message;
+}
+util.inherits(RespError, Error);
+RespError.prototype.name = 'RespError';
 
 function bufferify(val) {
   var index, buffer;
@@ -129,20 +136,20 @@ function parseBuffer(buffer, index, returnBuffers) {
       return result;
 
     case 45:  // '-'
-      if (!result.content.length) return new Error('Parse "-" fail');
-      result.content = new Error(result.content);
+      if (!result.content.length) return new RespError('Parse "-" fail');
+      result.content = new RespError(result.content);
       return result;
 
     case 58:  // ':'
       result.content = +(result.content);
-      if (result.content !== result.content) return new Error('Parse ":" fail');
+      if (result.content !== result.content) return new RespError('Parse ":" fail');
       return result;
 
     case 36:  // '$'
       len = +(result.content);
-      if (!result.content.length || len !== len) return new Error('Parse "$" fail, invalid length');
+      if (!result.content.length || len !== len) return new RespError('Parse "$" fail, invalid length');
       if (len === -1) result.content = null;
-      else if (!isCRLF(buffer, result.index + len)) return new Error('Parse "$" fail, invalid CRLF');
+      else if (!isCRLF(buffer, result.index + len)) return new RespError('Parse "$" fail, invalid CRLF');
       else {
         result.content = buffer[returnBuffers ? 'slice' : 'utf8Slice'](result.index, result.index + len);
         result.index = result.index + len + 2;
@@ -151,7 +158,7 @@ function parseBuffer(buffer, index, returnBuffers) {
 
     case 42:  // '*'
       len = +(result.content);
-      if (!result.content.length || len !== len) return new Error('Parse "*" fail, invalid length');
+      if (!result.content.length || len !== len) return new RespError('Parse "*" fail, invalid length');
       if (len === -1) result.content = null;
       else if (len === 0) result.content = [];
       else {
@@ -167,7 +174,7 @@ function parseBuffer(buffer, index, returnBuffers) {
       return result;
   }
 
-  return new Error('Invalid Chunk: parse fail');
+  return new RespError('Invalid Chunk: parse fail');
 }
 
 function RespState(options) {
@@ -179,20 +186,25 @@ function RespState(options) {
   this.returnBuffers = !!options.returnBuffers;
 }
 
+function clearState(ctx) {
+  ctx._respState.index = 0;
+  ctx._respState.buffer = null;
+}
+
 function Resp(options) {
   if (!(this instanceof Resp)) return new Resp(options);
   options = options || {};
   this._respState = new RespState(options);
-  this.autoEnd(options.expectResCount);
+  this.setAutoEnd(options.expectResCount);
   EventEmitter.call(this);
 }
 util.inherits(Resp, EventEmitter);
 
 Resp.prototype.feed = function (buffer) {
   var state = this._respState;
-  if (state.ended) return this.emit('error', new TypeError('The resp was ended'));
+  if (state.ended) return this.emit('error', new RespError('The resp was ended'));
   if (!buffer) return this.end();
-  if (!Buffer.isBuffer(buffer)) return this.emit('error', new TypeError('Invalid buffer chunk'));
+  if (!Buffer.isBuffer(buffer)) return this.emit('error', new RespError('Invalid buffer chunk'));
 
   if (!state.buffer) state.buffer = buffer;
   else {
@@ -218,7 +230,7 @@ Resp.prototype.feed = function (buffer) {
     state.index = result.index;
     this.emit('data', result.content);
     if (state.resCount >= state.expectResCount) {
-      if (state.index < state.buffer.length) this.emit('error', new Error('Data surplus'));
+      if (state.index < state.buffer.length) this.emit('error', new RespError('Data surplus'));
       clearState(this);
       return this.end();
     }
@@ -227,7 +239,8 @@ Resp.prototype.feed = function (buffer) {
   return this.emit('wait');
 };
 
-Resp.prototype.autoEnd = function (resCount) {
+// `autoEnd` will be removed
+Resp.prototype.setAutoEnd = Resp.prototype.autoEnd = function (resCount) {
   var state = this._respState;
   if (resCount >= 1) state.expectResCount = state.resCount + resCount;  // limited Mode
   else state.expectResCount = Number.MAX_VALUE; // infinite Mode
@@ -239,8 +252,3 @@ Resp.prototype.end = function (chunk) {
   this._respState.ended = true;
   this.emit('end');
 };
-
-function clearState(ctx) {
-  ctx._respState.index = 0;
-  ctx._respState.buffer = null;
-}

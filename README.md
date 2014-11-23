@@ -1,4 +1,4 @@
-RESP v0.3.1 [![Build Status](https://travis-ci.org/zensh/resp.js.svg)](https://travis-ci.org/zensh/resp.js)
+RESP v0.4.0 [![Build Status](https://travis-ci.org/zensh/resp.js.svg)](https://travis-ci.org/zensh/resp.js)
 ====
 > An implementation of REdis Serialization Protocol (RESP).
 
@@ -55,7 +55,7 @@ var respEventEmitter = new resp.Resp({
 
 
 ### respEventEmitter.feed(buffer)
-### respEventEmitter.autoEnd(resCount)
+### respEventEmitter.setAutoEnd(resCount)
 
 ### respEventEmitter.on('data', function (redisReplyData) {})
 ### respEventEmitter.on('error', function (error) {})
