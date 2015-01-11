@@ -1,6 +1,9 @@
-RESP v0.4.1 [![Build Status](https://travis-ci.org/zensh/resp.js.svg)](https://travis-ci.org/zensh/resp.js)
+RESP.js
 ====
-> An implementation of REdis Serialization Protocol (RESP).
+An implementation of REdis Serialization Protocol (RESP).
+
+[![NPM version][npm-image]][npm-url]
+[![Build Status][travis-image]][travis-url]
 
 ## Install
 
@@ -66,3 +69,9 @@ var respEventEmitter = new resp.Resp({
 ## License
 
 MIT © [zensh](https://github.com/zensh)
+
+[npm-url]: https://npmjs.org/package/resp.js
+[npm-image]: http://img.shields.io/npm/v/resp.js.svg
+
+[travis-url]: https://travis-ci.org/zensh/resp.js
+[travis-image]: http://img.shields.io/travis/zensh/resp.js.svg

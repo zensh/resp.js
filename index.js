@@ -149,6 +149,7 @@ function parseBuffer(buffer, index, returnBuffers) {
       len = +(result.content);
       if (!result.content.length || len !== len) return new RespError('Parse "$" fail, invalid length');
       if (len === -1) result.content = null;
+      else if (buffer.length < result.index + len + 2) return null;
       else if (!isCRLF(buffer, result.index + len)) return new RespError('Parse "$" fail, invalid CRLF');
       else {
         result.content = buffer[returnBuffers ? 'slice' : 'utf8Slice'](result.index, result.index + len);
