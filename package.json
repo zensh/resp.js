@@ -1,10 +1,10 @@
 {
   "name": "respjs",
-  "description": "An implementation of REdis Serialization Protocol (RESP).",
+  "description": "An implementation of REdis Serialization Protocol (RESP), parse pipelining chunks.",
   "authors": [
     "Yan Qing <admin@zensh.com>"
   ],
-  "version": "0.4.3",
+  "version": "1.0.0",
   "main": "index.js",
   "repository": {
     "type": "git",
@@ -14,6 +14,7 @@
   "keywords": [
     "redis",
     "resp",
+    "pipelining",
     "Protocol",
     "parallel",
     "stream"

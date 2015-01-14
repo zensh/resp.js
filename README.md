@@ -1,9 +1,13 @@
 RESP.js
 ====
-An implementation of REdis Serialization Protocol (RESP).
+An implementation of REdis Serialization Protocol (RESP), parse pipelining chunks.
 
 [![NPM version][npm-image]][npm-url]
 [![Build Status][travis-image]][travis-url]
+
+## Implementations:
+
+- [thunk-redis](https://github.com/thunks/thunk-redis): A redis client with pipelining, rely on thunks, support promise.
 
 ## Install
 
@@ -38,7 +42,7 @@ Decode RESP `string` to value.
 
 ### resp.Resp(options)
 
-return a eventEmitter, then feed one or more buffers and decode to some value.
+return a eventEmitter, then feed pipelining buffers and decode to some value.
 
 ```js
 var respEventEmitter = new resp.Resp({
