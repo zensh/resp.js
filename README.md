@@ -64,18 +64,18 @@ var respEventEmitter = new resp.Resp({
 ### respEventEmitter.feed(buffer)
 ### respEventEmitter.setAutoEnd(resCount)
 
-### respEventEmitter.on('data', function (redisReplyData) {})
-### respEventEmitter.on('error', function (error) {})
-### respEventEmitter.on('wait', function () {})
-### respEventEmitter.on('end', function () {})
+### respEventEmitter.on('data', function(redisReplyData) {})
+### respEventEmitter.on('error', function(error) {})
+### respEventEmitter.on('wait', function() {})
+### respEventEmitter.on('end', function() {})
 
 
 ## License
 
 MIT © [zensh](https://github.com/zensh)
 
-[npm-url]: https://npmjs.org/package/resp.js
-[npm-image]: http://img.shields.io/npm/v/resp.js.svg
+[npm-url]: https://npmjs.org/package/respjs
+[npm-image]: http://img.shields.io/npm/v/respjs.svg
 
 [travis-url]: https://travis-ci.org/zensh/resp.js
 [travis-image]: http://img.shields.io/travis/zensh/resp.js.svg

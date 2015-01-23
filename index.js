@@ -16,20 +16,20 @@ exports.Resp = Resp;
 exports.parse = function(string, returnBuffers) {
   var buffer = new Buffer(string);
   var result = parseBuffer(buffer, 0, returnBuffers);
-  if (!result || result.index < buffer.length) throw new RespError('Parse "' + string + '" fail');
+  if (!result || result.index < buffer.length) throw new RespError('Parse "' + string + '" failed');
   if (result instanceof Error) throw result;
   return result.content;
 };
 
 exports.stringify = function(value, forceBulkStrings) {
   var str = stringify(value, forceBulkStrings);
-  if (!str) throw new RespError('Invalid value: ' + value);
+  if (!str) throw new RespError('Invalid value: ' + JSON.stringify(value));
   return str;
 };
 
 exports.bufferify = function(value) {
   var buffer = bufferify(value);
-  if (!buffer) throw new RespError('Invalid value: ' + value);
+  if (!buffer) throw new RespError('Invalid value: ' + JSON.stringify(value));
   return buffer;
 };
 
@@ -97,10 +97,9 @@ Resp.prototype.end = function(chunk) {
 
 function stringify(val, forceBulkStrings) {
   var str = '', _str = null;
-  if (val == null || val !== val) return '$-1' + CRLF;
+  if (val == null || val !== val) return forceBulkStrings ? false : '$-1' + CRLF;
 
   var type = typeof val;
-
   if (forceBulkStrings && type !== 'object') {
     val = val + '';
     return '$' + Buffer.byteLength(val, 'utf8') + CRLF + val + CRLF;
@@ -126,7 +125,6 @@ function stringify(val, forceBulkStrings) {
     }
     return str;
   }
-
   return false;
 }
 
@@ -187,21 +185,21 @@ function parseBuffer(buffer, index, returnBuffers) {
       return result;
 
     case 45: // '-'
-      if (!result.content.length) return new RespError('Parse "-" fail');
+      if (!result.content.length) return new RespError('Parse "-" failed');
       result.content = new RespError(result.content);
       return result;
 
     case 58: // ':'
       result.content = +(result.content);
-      if (result.content !== result.content) return new RespError('Parse ":" fail');
+      if (result.content !== result.content) return new RespError('Parse ":" failed');
       return result;
 
     case 36: // '$'
       len = +(result.content);
-      if (!result.content.length || len !== len) return new RespError('Parse "$" fail, invalid length');
+      if (!result.content.length || len !== len) return new RespError('Parse "$" failed, invalid length');
       if (len === -1) result.content = null;
       else if (buffer.length < result.index + len + 2) return null;
-      else if (!isCRLF(buffer, result.index + len)) return new RespError('Parse "$" fail, invalid CRLF');
+      else if (!isCRLF(buffer, result.index + len)) return new RespError('Parse "$" failed, invalid CRLF');
       else {
         result.content = buffer[returnBuffers ? 'slice' : 'utf8Slice'](result.index, result.index + len);
         result.index = result.index + len + 2;
@@ -210,7 +208,7 @@ function parseBuffer(buffer, index, returnBuffers) {
 
     case 42: // '*'
       len = +(result.content);
-      if (!result.content.length || len !== len) return new RespError('Parse "*" fail, invalid length');
+      if (!result.content.length || len !== len) return new RespError('Parse "*" failed, invalid length');
       if (len === -1) result.content = null;
       else if (len === 0) result.content = [];
       else {
@@ -225,8 +223,7 @@ function parseBuffer(buffer, index, returnBuffers) {
       }
       return result;
   }
-
-  return new RespError('Invalid Chunk: parse fail');
+  return new RespError('Invalid Chunk: parse failed');
 }
 
 function RespState(options) {
