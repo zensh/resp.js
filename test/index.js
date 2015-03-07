@@ -1,8 +1,8 @@
 'use strict';
 /*global describe, it, before, after, beforeEach, afterEach*/
 
-var should = require('should'),
-  resp = require('../index.js');
+var assert = require('assert');
+var resp = require('../index.js');
 
 function bufferEql(buffer1, buffer2) {
   if (!Buffer.isBuffer(buffer1) || !Buffer.isBuffer(buffer2)) return false;
@@ -15,103 +15,104 @@ function bufferEql(buffer1, buffer2) {
 
 describe('resp.js', function() {
   it('resp.stringify(obj)', function(done) {
-    should(resp.stringify(null)).be.equal('$-1\r\n');
-    should(resp.stringify(NaN)).be.equal('$-1\r\n');
-    should(resp.stringify('')).be.equal('+\r\n');
-    should(resp.stringify('1')).be.equal('+1\r\n');
-    should(resp.stringify('中文')).be.equal('+中文\r\n');
-    should(resp.stringify(99)).be.equal(':99\r\n');
-    should(resp.stringify(-99)).be.equal(':-99\r\n');
-    should(resp.stringify(new Error('error'))).be.equal('-Error: error\r\n');
-    should(resp.stringify([])).be.equal('*0\r\n');
-    should(resp.stringify([[1, 2, 3], ['Foo']])).be.equal('*2\r\n*3\r\n:1\r\n:2\r\n:3\r\n*1\r\n+Foo\r\n');
-    should(resp.stringify(['foo', null, 'bar'])).be.equal('*3\r\n+foo\r\n$-1\r\n+bar\r\n');
-    // should(resp.stringify(new Buffer('中文'))).be.equal('$6\r\n中文\r\n');
-    // should(resp.stringify(new Buffer(0))).be.equal('$0\r\n\r\n');
-    should(function() { resp.stringify({}); }).throw();
-    should(function() { resp.stringify(new Buffer('123')); }).throw();
-    should(function() { resp.stringify([1, {}]); }).throw();
-    should(function() { resp.stringify(new Date()); }).throw();
+    assert.strictEqual(resp.stringify(null), '$-1\r\n');
+    assert.strictEqual(resp.stringify(NaN), '$-1\r\n');
+    assert.strictEqual(resp.stringify(''), '+\r\n');
+    assert.strictEqual(resp.stringify('1'), '+1\r\n');
+    assert.strictEqual(resp.stringify('中文'), '+中文\r\n');
+    assert.strictEqual(resp.stringify(99), ':99\r\n');
+    assert.strictEqual(resp.stringify(-99), ':-99\r\n');
+    assert.strictEqual(resp.stringify(new Error('error')), '-Error error\r\n');
+    var err = new Error('error');
+    err.type = 'ERR';
+    assert.strictEqual(resp.stringify(err), '-ERR error\r\n');
+    assert.strictEqual(resp.stringify([]), '*0\r\n');
+    assert.strictEqual(resp.stringify([[1, 2, 3], ['Foo']]), '*2\r\n*3\r\n:1\r\n:2\r\n:3\r\n*1\r\n+Foo\r\n');
+    assert.strictEqual(resp.stringify(['foo', null, 'bar']), '*3\r\n+foo\r\n$-1\r\n+bar\r\n');
+    assert.throws(function() { resp.stringify({}); });
+    assert.throws(function() { resp.stringify(new Buffer('123')); });
+    assert.throws(function() { resp.stringify([1, {}]); });
+    assert.throws(function() { resp.stringify(new Date()); });
     done();
   });
 
   it('resp.stringify(obj, true)', function(done) {
-    should(resp.stringify('', true)).be.equal('$0\r\n\r\n');
-    should(resp.stringify('1', true)).be.equal('$1\r\n1\r\n');
-    should(resp.stringify('中文', true)).be.equal('$6\r\n中文\r\n');
-    should(resp.stringify(99, true)).be.equal('$2\r\n99\r\n');
-    should(resp.stringify(-99, true)).be.equal('$3\r\n-99\r\n');
-    should(resp.stringify(new Error('error'), true)).be.equal('-Error: error\r\n');
-    should(resp.stringify([], true)).be.equal('*0\r\n');
-    should(resp.stringify([[1, 2, 3], ['Foo']], true)).be.equal('*2\r\n*3\r\n$1\r\n1\r\n$1\r\n2\r\n$1\r\n3\r\n*1\r\n$3\r\nFoo\r\n');
-    should(function() { resp.stringify(NaN, true); }).throw();
-    should(function() { resp.stringify(null, true); }).throw();
-    should(function() { resp.stringify(['foo', null, 'bar'], true); }).throw();
+    assert.strictEqual(resp.stringify('', true), '$0\r\n\r\n');
+    assert.strictEqual(resp.stringify('1', true), '$1\r\n1\r\n');
+    assert.strictEqual(resp.stringify('中文', true), '$6\r\n中文\r\n');
+    assert.strictEqual(resp.stringify(99, true), '$2\r\n99\r\n');
+    assert.strictEqual(resp.stringify(-99, true), '$3\r\n-99\r\n');
+    assert.strictEqual(resp.stringify(new Error('error'), true), '-Error error\r\n');
+    assert.strictEqual(resp.stringify([], true), '*0\r\n');
+    assert.strictEqual(resp.stringify([[1, 2, 3], ['Foo']], true), '*2\r\n*3\r\n$1\r\n1\r\n$1\r\n2\r\n$1\r\n3\r\n*1\r\n$3\r\nFoo\r\n');
+    assert.throws(function() { resp.stringify(NaN, true); });
+    assert.throws(function() { resp.stringify(null, true); });
+    assert.throws(function() { resp.stringify(['foo', null, 'bar'], true); });
     done();
   });
 
   it('resp.bufferify(obj)', function(done) {
-    should(bufferEql(resp.bufferify(''), new Buffer('$0\r\n\r\n'))).be.equal(true);
-    should(bufferEql(resp.bufferify('1'), new Buffer('$1\r\n1\r\n'))).be.equal(true);
-    should(bufferEql(resp.bufferify('中文'), new Buffer('$6\r\n中文\r\n'))).be.equal(true);
-    should(bufferEql(resp.bufferify(99), new Buffer('$2\r\n99\r\n'))).be.equal(true);
-    should(bufferEql(resp.bufferify(-99), new Buffer('$3\r\n-99\r\n'))).be.equal(true);
-    should(bufferEql(resp.bufferify(new Error('error')), new Buffer('-Error: error\r\n'))).be.equal(true);
-    should(bufferEql(resp.bufferify([]), new Buffer('*0\r\n'))).be.equal(true);
-    should(bufferEql(resp.bufferify([[1, 2, 3], ['Foo']]), new Buffer('*2\r\n*3\r\n$1\r\n1\r\n$1\r\n2\r\n$1\r\n3\r\n*1\r\n$3\r\nFoo\r\n'))).be.equal(true);
-    should(bufferEql(resp.bufferify(new Buffer('中文')), new Buffer('$6\r\n中文\r\n'))).be.equal(true);
-    should(function() { resp.bufferify({}); }).throw();
-    should(function() { resp.bufferify(NaN); }).throw();
-    should(function() { resp.bufferify(null); }).throw();
-    should(function() { resp.bufferify([1, {}]); }).throw();
-    should(function() { resp.bufferify([null, new Buffer('\x01\x02\x03')]); }).throw();
-    should(function() { resp.bufferify(['foo', null, 'bar']); }).throw();
+    assert.strictEqual(bufferEql(resp.bufferify(''), new Buffer('$0\r\n\r\n')), true);
+    assert.strictEqual(bufferEql(resp.bufferify('1'), new Buffer('$1\r\n1\r\n')), true);
+    assert.strictEqual(bufferEql(resp.bufferify('中文'), new Buffer('$6\r\n中文\r\n')), true);
+    assert.strictEqual(bufferEql(resp.bufferify(99), new Buffer('$2\r\n99\r\n')), true);
+    assert.strictEqual(bufferEql(resp.bufferify(-99), new Buffer('$3\r\n-99\r\n')), true);
+    assert.strictEqual(bufferEql(resp.bufferify(new Error('error')), new Buffer('-Error error\r\n')), true);
+    assert.strictEqual(bufferEql(resp.bufferify([]), new Buffer('*0\r\n')), true);
+    assert.strictEqual(bufferEql(resp.bufferify([[1, 2, 3], ['Foo']]), new Buffer('*2\r\n*3\r\n$1\r\n1\r\n$1\r\n2\r\n$1\r\n3\r\n*1\r\n$3\r\nFoo\r\n')), true);
+    assert.strictEqual(bufferEql(resp.bufferify(new Buffer('中文')), new Buffer('$6\r\n中文\r\n')), true);
+    assert.throws(function() { resp.bufferify({}); });
+    assert.throws(function() { resp.bufferify(NaN); });
+    assert.throws(function() { resp.bufferify(null); });
+    assert.throws(function() { resp.bufferify([1, {}]); });
+    assert.throws(function() { resp.bufferify([null, new Buffer('\x01\x02\x03')]); });
+    assert.throws(function() { resp.bufferify(['foo', null, 'bar']); });
     done();
   });
 
   it('resp.parse(str)', function(done) {
-    should(resp.parse('$-1\r\n')).be.equal(null);
-    should(resp.parse('+\r\n')).be.equal('');
-    should(resp.parse('$0\r\n\r\n')).be.equal('');
-    should(resp.parse('+1\r\n')).be.equal('1');
-    should(resp.parse('+中文\r\n')).be.equal('中文');
-    should(resp.parse(':99\r\n')).be.equal(99);
-    should(resp.parse(':-99\r\n')).be.equal(-99);
-    should(resp.parse('-Error: error\r\n')).be.instanceOf(Error);
-    should(resp.parse('*0\r\n')).be.eql([]);
-    should(resp.parse('*2\r\n*3\r\n:1\r\n:2\r\n:3\r\n*2\r\n+Foo\r\n+Bar\r\n')).be.eql([[1, 2, 3], ['Foo', 'Bar']]);
-    should(resp.parse('*3\r\n+foo\r\n$-1\r\n+bar\r\n')).be.eql(['foo', null, 'bar']);
+    assert.strictEqual(resp.parse('$-1\r\n'), null);
+    assert.strictEqual(resp.parse('+\r\n'), '');
+    assert.strictEqual(resp.parse('$0\r\n\r\n'), '');
+    assert.strictEqual(resp.parse('+1\r\n'), '1');
+    assert.strictEqual(resp.parse('+中文\r\n'), '中文');
+    assert.strictEqual(resp.parse(':99\r\n'), 99);
+    assert.strictEqual(resp.parse(':-99\r\n'), -99);
+    assert.strictEqual(resp.parse('-Error: error\r\n') instanceof Error, true);
+    assert.deepEqual(resp.parse('*0\r\n'), []);
+    assert.deepEqual(resp.parse('*2\r\n*3\r\n:1\r\n:2\r\n:3\r\n*2\r\n+Foo\r\n+Bar\r\n'), [[1, 2, 3], ['Foo', 'Bar']]);
+    assert.deepEqual(resp.parse('*3\r\n+foo\r\n$-1\r\n+bar\r\n'), ['foo', null, 'bar']);
     var buf = resp.parse('$6\r\n中文\r\n', true);
-    should(buf.length).be.equal(6);
-    should(buf.toString()).be.equal('中文');
-    should(function() { resp.parse('abc'); }).throw();
-    should(function() { resp.parse('$-11\r\n'); }).throw();
-    should(function() { resp.parse(':a\r\n'); }).throw();
-    should(function() { resp.parse(':1\r\n1'); }).throw();
-    should(function() { resp.parse('*2\r\n*3\r\n:1\r\n:2\r\n:3\r\n*2\r\n+Foo\r\n+Bar\r\n123'); }).throw();
+    assert.strictEqual(buf.length, 6);
+    assert.strictEqual(buf.toString(), '中文');
+    assert.throws(function() { resp.parse('abc'); });
+    assert.throws(function() { resp.parse('$-11\r\n'); });
+    assert.throws(function() { resp.parse(':a\r\n'); });
+    assert.throws(function() { resp.parse(':1\r\n1'); });
+    assert.throws(function() { resp.parse('*2\r\n*3\r\n:1\r\n:2\r\n:3\r\n*2\r\n+Foo\r\n+Bar\r\n123'); });
     done();
   });
 
   it('resp.parse(resp.stringify(obj))', function(done) {
-    should(resp.parse(resp.stringify(null))).be.equal(null);
-    should(resp.parse(resp.stringify(1))).be.equal(1);
-    should(resp.parse(resp.stringify('1'))).be.equal('1');
-    should(resp.parse(resp.stringify('中文'))).be.equal('中文');
-    should(resp.parse(resp.stringify([]))).be.eql([]);
-    should(resp.parse(resp.stringify([[[]]]))).be.eql([[[]]]);
-    should(resp.parse(resp.stringify([1, '2', ['3']]))).be.eql([1, '2', ['3']]);
+    assert.strictEqual(resp.parse(resp.stringify(null)), null);
+    assert.strictEqual(resp.parse(resp.stringify(1)), 1);
+    assert.strictEqual(resp.parse(resp.stringify('1')), '1');
+    assert.strictEqual(resp.parse(resp.stringify('中文')), '中文');
+    assert.deepEqual(resp.parse(resp.stringify([])), []);
+    assert.deepEqual(resp.parse(resp.stringify([[[]]])), [[[]]]);
+    assert.deepEqual(resp.parse(resp.stringify([1, '2', ['3']])), [1, '2', ['3']]);
     done();
   });
 
   it('resp.parse(resp.bufferify(obj))', function(done) {
-    should(resp.parse(resp.bufferify(1))).be.equal('1');
-    should(resp.parse(resp.bufferify('1'))).be.equal('1');
-    should(resp.parse(resp.bufferify('中文'))).be.equal('中文');
-    should(resp.parse(resp.bufferify([]))).be.eql([]);
-    should(resp.parse(resp.bufferify([[[]]]))).be.eql([[[]]]);
-    should(resp.parse(resp.bufferify([1, '2', ['3']]))).be.eql(['1', '2', ['3']]);
-    should(resp.parse(resp.bufferify([1, new Buffer('中文')]))).be.eql(['1', '中文']);
-    should(function() { resp.parse(resp.bufferify(null)); }).throw();
+    assert.strictEqual(resp.parse(resp.bufferify(1)), '1');
+    assert.strictEqual(resp.parse(resp.bufferify('1')), '1');
+    assert.strictEqual(resp.parse(resp.bufferify('中文')), '中文');
+    assert.deepEqual(resp.parse(resp.bufferify([])), []);
+    assert.deepEqual(resp.parse(resp.bufferify([[[]]])), [[[]]]);
+    assert.deepEqual(resp.parse(resp.bufferify([1, '2', ['3']])), ['1', '2', ['3']]);
+    assert.deepEqual(resp.parse(resp.bufferify([1, new Buffer('中文')])), ['1', '中文']);
+    assert.throws(function() { resp.parse(resp.bufferify(null)); });
     done();
   });
 
@@ -125,7 +126,7 @@ describe('resp.js', function() {
         if (result.length === 6) reply.feed(null);
       })
       .on('end', function() {
-        should(result).be.eql(['0', '2', '', '中文', [], [[]]]);
+        assert.deepEqual(result, ['0', '2', '', '中文', [], [[]]]);
         done();
       });
 
@@ -146,7 +147,7 @@ describe('resp.js', function() {
         result.push(data);
       })
       .on('end', function() {
-        should(result).be.eql(['中文', ['1', [], '2'], [['1']]]);
+        assert.deepEqual(result, ['中文', ['1', [], '2'], [['1']]]);
         done();
       });
 
@@ -160,7 +161,7 @@ describe('resp.js', function() {
 
     reply
       .on('data', function(data) {
-        should(Buffer.isBuffer(data)).be.equal(true);
+        assert.strictEqual(Buffer.isBuffer(data), true);
       })
       .on('end', done);
 
@@ -177,7 +178,7 @@ describe('resp.js', function() {
         result.push(data);
       })
       .on('end', function() {
-        should(result).be.eql(['中文', '', '123']);
+        assert.deepEqual(result, ['中文', '', '123']);
         done();
       });
 
@@ -198,7 +199,7 @@ describe('resp.js', function() {
         result.push('');
       })
       .on('end', function() {
-        should(result).be.eql(['', '', '123']);
+        assert.deepEqual(result, ['', '', '123']);
         done();
       });
 

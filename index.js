@@ -108,13 +108,11 @@ function stringify(val, forceBulkStrings) {
   switch (type) {
     case 'string':
       return '+' + val + CRLF;
-    case 'boolean':
-      return ':' + (+val) + CRLF;
     case 'number':
       return ':' + val + CRLF;
   }
 
-  if (util.isError(val)) return '-' + val.name + ': ' + val.message + CRLF;
+  if (util.isError(val)) return '-' + (val.type || val.name) + ' ' + val.message + CRLF;
 
   if (util.isArray(val)) {
     str = '*' + val.length + CRLF;
@@ -132,7 +130,8 @@ function bufferify(val) {
   var index, buffer;
   var str = stringify(val, true);
 
-  if (str) return new Buffer(str);
+  if (str) return new Buffer(str, 'utf8');
+
   if (Buffer.isBuffer(val)) {
     str = '$' + val.length + CRLF;
     buffer = new Buffer(str.length + val.length + 2);
@@ -141,6 +140,7 @@ function bufferify(val) {
     buffer.write(CRLF, str.length + val.length);
     return buffer;
   }
+
   if (!Array.isArray(val)) return false;
 
   str = '*' + val.length + CRLF;
@@ -162,7 +162,7 @@ function bufferify(val) {
       index = buffer.length;
     }
   }
-  return buffer.slice(0, index);
+  return index === buffer.length ? buffer : buffer.slice(0, index);
 }
 
 function readBuffer(buffer, index) {
@@ -186,16 +186,18 @@ function parseBuffer(buffer, index, returnBuffers) {
 
     case 45: // '-'
       if (!result.content.length) return new RespError('Parse "-" failed');
-      result.content = new RespError(result.content);
+      var type = result.content.replace(/\s[\s\S]*$/, '');
+      result.content = new Error(result.content);
+      result.content.type = type;
       return result;
 
     case 58: // ':'
-      result.content = +(result.content);
+      result.content = +result.content;
       if (result.content !== result.content) return new RespError('Parse ":" failed');
       return result;
 
     case 36: // '$'
-      len = +(result.content);
+      len = +result.content;
       if (!result.content.length || len !== len) return new RespError('Parse "$" failed, invalid length');
       if (len === -1) result.content = null;
       else if (buffer.length < result.index + len + 2) return null;
@@ -207,7 +209,7 @@ function parseBuffer(buffer, index, returnBuffers) {
       return result;
 
     case 42: // '*'
-      len = +(result.content);
+      len = +result.content;
       if (!result.content.length || len !== len) return new RespError('Parse "*" failed, invalid length');
       if (len === -1) result.content = null;
       else if (len === 0) result.content = [];
@@ -215,8 +217,7 @@ function parseBuffer(buffer, index, returnBuffers) {
         result.content = Array(len);
         for (var i = 0; i < len; i++) {
           var _result = parseBuffer(buffer, result.index);
-          if (_result == null) return _result;
-          if (_result instanceof Error) return _result;
+          if (_result == null || _result instanceof Error) return _result;
           result.content[i] = _result.content;
           result.index = _result.index;
         }
