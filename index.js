@@ -216,7 +216,7 @@ function parseBuffer(buffer, index, returnBuffers) {
       else {
         result.content = Array(len);
         for (var i = 0; i < len; i++) {
-          var _result = parseBuffer(buffer, result.index);
+          var _result = parseBuffer(buffer, result.index, returnBuffers);
           if (_result == null || _result instanceof Error) return _result;
           result.content[i] = _result.content;
           result.index = _result.index;

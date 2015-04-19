@@ -112,6 +112,11 @@ describe('resp.js', function() {
     assert.deepEqual(resp.parse(resp.bufferify([[[]]])), [[[]]]);
     assert.deepEqual(resp.parse(resp.bufferify([1, '2', ['3']])), ['1', '2', ['3']]);
     assert.deepEqual(resp.parse(resp.bufferify([1, new Buffer('中文')])), ['1', '中文']);
+    var buf = new Buffer('中文');
+    var res = resp.parse(resp.bufferify([1, buf]), true);
+    assert.equal(res[0], '1');
+    // no `equals` method in v0.10.x
+    if (buf.equals) assert.equal(buf.equals(res[1]), true);
     assert.throws(function() { resp.parse(resp.bufferify(null)); });
     done();
   });
