@@ -17,58 +17,69 @@ Install with [npm](https://npmjs.org/package/respjs)
 npm install respjs
 ```
 
-
 ## Usage
 
 
 ## API
 
 ```js
-var resp = require('respjs');
+var Resp = require('respjs');
 ```
 
+### Class Resp
 
-### resp.bufferify(value)
+#### new Resp([options])
 
-Encode `value` to RESP buffer.
+Resp is a EventEmitter similar to `Writable` stream. It accept pipelining socket chunks, parse them, produce redis response data. `Readable` stream can be piped to `resp`.
 
-### resp.stringify(value, forceBulkStrings)
-
-Encode `value` to RESP string.
-
-### resp.parse(string, returnBuffers)
-
-Decode RESP `string` to value.
-
-### resp.Resp(options)
-
-return a eventEmitter, then feed pipelining buffers and decode to some value.
+- `options` {Object}
+  - `returnBuffers` {Boolean} return buffers, default to `false`
 
 ```js
-var respEventEmitter = new resp.Resp({
-  expectResCount: 10,
+var resp = new Resp({
   returnBuffers: true
-})
+});
 ```
 
-#### Options.expectResCount
+### Resp.bufferify(value)
 
-*Optional*, Type: `Number`, Default: `Number.MAX_VALUE`.
+Encode `value` to `RESP` buffer.
 
+### Resp.stringify(value, forceBulkStrings)
 
-#### Options.returnBuffers
+Encode `value` to `RESP` string.
 
-*Optional*, Type: `Boolean`, Default: `false`.
+### Resp.parse(string, returnBuffers)
 
+Decode `RESP` `string` to value.
 
-### respEventEmitter.feed(buffer)
-### respEventEmitter.setAutoEnd(resCount)
+#### resp.write(chunk)
 
-### respEventEmitter.on('data', function(redisReplyData) {})
-### respEventEmitter.on('error', function(error) {})
-### respEventEmitter.on('wait', function() {})
-### respEventEmitter.on('end', function() {})
+Feed chunk and parse it. resp will emit `data` event while a integrated data decoded.
 
+#### resp.end([chunk])
+
+Call this method when no more chunk will be written to bufsp, then `finish` event emit.
+
+#### Event: 'error'
+
+- `error` {Error}
+
+Emitted when an error occurs.
+
+#### Event: 'data'
+
+- `data` {Mixed}
+
+Emitted when redis response data produced.
+
+#### Event: 'drain'
+
+Emitted when chunk have been parsed or need more chunks for parsing.
+
+#### Event: 'finish'
+
+The `finish` event is fired after `.end()` is called and all chunks have been processed.
 
 ## License
 
