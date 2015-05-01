@@ -4,6 +4,18 @@
 var assert = require('assert');
 var Resp = require('../index.js');
 
+if (!Buffer.prototype.equals) {
+  Buffer.prototype.equals = function(buffer) {
+    if (!Buffer.isBuffer(buffer)) return false;
+    if (this.length !== buffer.length) return false;
+    for (var i = 0; i < this.length; i++) {
+      if (this[i] !== buffer[i]) return false;
+    }
+    return true;
+  };
+}
+
+
 describe('Resp.js', function() {
   it('Resp.stringify(obj)', function(done) {
     assert.strictEqual(Resp.stringify(null), '$-1\r\n');
