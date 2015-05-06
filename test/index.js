@@ -179,6 +179,19 @@ describe('Resp.js', function() {
     reply.end();
   });
 
+  it('Resp():with non resp buffer', function(done) {
+    var reply = Resp();
+
+    reply
+      .on('error', function(error) {
+        assert.strictEqual(error instanceof Error, true);
+        assert.strictEqual(error.message, 'Invalid Chunk: parse failed');
+        done();
+      });
+
+    reply.write(new Buffer('non resp buffer'));
+  });
+
   it('Resp():with error data', function(done) {
     var result = [];
     var reply = Resp();

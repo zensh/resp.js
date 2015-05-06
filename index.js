@@ -173,15 +173,15 @@ function readBuffer(buffer, index) {
 }
 
 function parseBuffer(buffer, index, returnBuffers) {
-  var len = NaN;
-  var result = readBuffer(buffer, index + 1);
-  if (result == null) return result;
+  var result = null, len = NaN;
 
   switch (buffer[index]) {
     case 43: // '+'
-      return result;
+      return readBuffer(buffer, index + 1);
 
     case 45: // '-'
+      result = readBuffer(buffer, index + 1);
+      if (result == null) return result;
       var fragment = result.content.match(/^(\S+) ([\s\S]+)$/);
       if (!fragment) return new Error('Parse "-" failed');
       result.content = new Error(fragment[2]);
@@ -189,11 +189,15 @@ function parseBuffer(buffer, index, returnBuffers) {
       return result;
 
     case 58: // ':'
+      result = readBuffer(buffer, index + 1);
+      if (result == null) return result;
       result.content = +result.content;
       if (result.content !== result.content) return new Error('Parse ":" failed');
       return result;
 
     case 36: // '$'
+      result = readBuffer(buffer, index + 1);
+      if (result == null) return result;
       len = +result.content;
       if (!result.content.length || len !== len) return new Error('Parse "$" failed, invalid length');
       if (len === -1) result.content = null;
@@ -206,6 +210,8 @@ function parseBuffer(buffer, index, returnBuffers) {
       return result;
 
     case 42: // '*'
+      result = readBuffer(buffer, index + 1);
+      if (result == null) return result;
       len = +result.content;
       if (!result.content.length || len !== len) return new Error('Parse "*" failed, invalid length');
       if (len === -1) result.content = null;
