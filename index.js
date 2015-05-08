@@ -174,6 +174,7 @@ function readBuffer(buffer, index) {
 
 function parseBuffer(buffer, index, returnBuffers) {
   var result = null, len = NaN;
+  if (index >= buffer.length) return null;
 
   switch (buffer[index]) {
     case 43: // '+'
