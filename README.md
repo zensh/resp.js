@@ -23,7 +23,7 @@ npm install respjs
 ## API
 
 ```js
-var Resp = require('respjs');
+var Resp = require('respjs')
 ```
 
 ### Class Resp
@@ -38,7 +38,7 @@ Resp is a EventEmitter similar to `Writable` stream. It accept pipelining socket
 ```js
 var resp = new Resp({
   returnBuffers: true
-});
+})
 ```
 
 ### Resp.bufferify(value)

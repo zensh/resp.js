@@ -16,7 +16,7 @@ if (!Buffer.prototype.equals) {
 }
 
 describe('Resp.js', function () {
-  it('Resp.stringify(obj)', function (done) {
+  it('Resp.stringify(obj)', function () {
     assert.strictEqual(Resp.stringify(null), '$-1\r\n')
     assert.strictEqual(Resp.stringify(NaN), '$-1\r\n')
     assert.strictEqual(Resp.stringify(''), '+\r\n')
@@ -35,10 +35,9 @@ describe('Resp.js', function () {
     assert.throws(function () { Resp.stringify(new Buffer('123')) })
     assert.throws(function () { Resp.stringify([1, {}]) })
     assert.throws(function () { Resp.stringify(new Date()) })
-    done()
   })
 
-  it('Resp.stringify(obj, true)', function (done) {
+  it('Resp.stringify(obj, true)', function () {
     assert.strictEqual(Resp.stringify('', true), '$0\r\n\r\n')
     assert.strictEqual(Resp.stringify('1', true), '$1\r\n1\r\n')
     assert.strictEqual(Resp.stringify('中文', true), '$6\r\n中文\r\n')
@@ -50,10 +49,9 @@ describe('Resp.js', function () {
     assert.throws(function () { Resp.stringify(NaN, true) })
     assert.throws(function () { Resp.stringify(null, true) })
     assert.throws(function () { Resp.stringify(['foo', null, 'bar'], true) })
-    done()
   })
 
-  it('Resp.bufferify(obj)', function (done) {
+  it('Resp.bufferify(obj)', function () {
     assert.strictEqual(Resp.bufferify('').equals(new Buffer('$0\r\n\r\n')), true)
     assert.strictEqual(Resp.bufferify('1').equals(new Buffer('$1\r\n1\r\n')), true)
     assert.strictEqual(Resp.bufferify('中文').equals(new Buffer('$6\r\n中文\r\n')), true)
@@ -69,10 +67,9 @@ describe('Resp.js', function () {
     assert.throws(function () { Resp.bufferify([1, {}]) })
     assert.throws(function () { Resp.bufferify([null, new Buffer('\x01\x02\x03')]) })
     assert.throws(function () { Resp.bufferify(['foo', null, 'bar']) })
-    done()
   })
 
-  it('Resp.parse(str)', function (done) {
+  it('Resp.parse(str)', function () {
     assert.strictEqual(Resp.parse('$-1\r\n'), null)
     assert.strictEqual(Resp.parse('+\r\n'), '')
     assert.strictEqual(Resp.parse('$0\r\n\r\n'), '')
@@ -92,10 +89,9 @@ describe('Resp.js', function () {
     assert.throws(function () { Resp.parse(':a\r\n') })
     assert.throws(function () { Resp.parse(':1\r\n1') })
     assert.throws(function () { Resp.parse('*2\r\n*3\r\n:1\r\n:2\r\n:3\r\n*2\r\n+Foo\r\n+Bar\r\n123') })
-    done()
   })
 
-  it('Resp.parse(Resp.stringify(obj))', function (done) {
+  it('Resp.parse(Resp.stringify(obj))', function () {
     assert.strictEqual(Resp.parse(Resp.stringify(null)), null)
     assert.strictEqual(Resp.parse(Resp.stringify(1)), 1)
     assert.strictEqual(Resp.parse(Resp.stringify('1')), '1')
@@ -103,10 +99,9 @@ describe('Resp.js', function () {
     assert.deepEqual(Resp.parse(Resp.stringify([])), [])
     assert.deepEqual(Resp.parse(Resp.stringify([[[]]])), [[[]]])
     assert.deepEqual(Resp.parse(Resp.stringify([1, '2', ['3']])), [1, '2', ['3']])
-    done()
   })
 
-  it('Resp.parse(Resp.bufferify(obj))', function (done) {
+  it('Resp.parse(Resp.bufferify(obj))', function () {
     assert.strictEqual(Resp.parse(Resp.bufferify(1)), '1')
     assert.strictEqual(Resp.parse(Resp.bufferify('1')), '1')
     assert.strictEqual(Resp.parse(Resp.bufferify('中文')), '中文')
@@ -120,7 +115,6 @@ describe('Resp.js', function () {
     // no `equals` method in v0.10.x
     if (buf.equals) assert.equal(buf.equals(res[1]), true)
     assert.throws(function () { Resp.parse(Resp.bufferify(null)) })
-    done()
   })
 
   it('Resp()', function (done) {

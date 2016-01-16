@@ -188,7 +188,7 @@ function parseBuffer (buffer, index, returnBuffers) {
       var fragment = result.content.match(/^(\S+) ([\s\S]+)$/)
       if (!fragment) return new Error('Parse "-" failed')
       result.content = new Error(fragment[2])
-      result.content.name = fragment[1]
+      result.content.name = result.content.code = fragment[1]
       return result
 
     case 58: // ':'
