@@ -9,7 +9,7 @@
 
 var util = require('util')
 var EventEmitter = require('events').EventEmitter
-var isInteger = Number.isSafeInteger || function (num) {
+var isInteger = Number.isInteger || function (num) {
   return num === Math.floor(num)
 }
 var CRLF = '\r\n'

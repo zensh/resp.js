@@ -33,6 +33,7 @@ describe('Respjs', function () {
     it('Resp.encodeInteger(num)', function () {
       assert.strictEqual(Resp.encodeInteger(123).toString(), ':123\r\n')
       assert.strictEqual(Resp.encodeInteger(-1).toString(), ':-1\r\n')
+      assert.strictEqual(Resp.encodeInteger(1456061893587000000).toString(), ':1456061893587000000\r\n')
       assert.throws(function () { Resp.encodeInteger() })
       assert.throws(function () { Resp.encodeInteger(1.1) })
       assert.throws(function () { Resp.encodeInteger('1') })
@@ -96,6 +97,7 @@ describe('Respjs', function () {
       assert.strictEqual(err.message, 'err')
 
       assert.strictEqual(Resp.decode(Resp.encodeInteger(123)), 123)
+      assert.strictEqual(Resp.decode(Resp.encodeInteger(1456061893587000000)), 1456061893587000000)
       assert.strictEqual(Resp.decode(Resp.encodeInteger(123), true), 123)
 
       assert.strictEqual(Resp.decode(Resp.encodeBulk(123)), '123')
