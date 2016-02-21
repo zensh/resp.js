@@ -9,26 +9,112 @@
 
 var util = require('util')
 var EventEmitter = require('events').EventEmitter
+var isInteger = Number.isSafeInteger || function (num) {
+  return num === Math.floor(num)
+}
 var CRLF = '\r\n'
 
 module.exports = Resp
+Resp.Resp = Resp
 
-Resp.parse = function (string, returnBuffers) {
+Resp.encodeNull = function () {
+  return new Buffer([36, 45, 49, 13, 10])
+}
+
+Resp.encodeNullArray = function () {
+  return new Buffer([42, 45, 49, 13, 10])
+}
+
+Resp.encodeString = function (str) {
+  if (typeof str !== 'string') throw new TypeError(String(str) + ' must be string')
+  return new Buffer('+' + str + CRLF)
+}
+
+Resp.encodeError = function (err) {
+  if (!util.isError(err)) throw new TypeError(String(err) + ' must be Error object')
+  return new Buffer('-' + err.name + ' ' + err.message + CRLF)
+}
+
+Resp.encodeInteger = function (num) {
+  if (!isInteger(num)) throw new TypeError(String(num) + ' must be Integer')
+  return new Buffer(':' + num + CRLF)
+}
+
+Resp.encodeBulk = function (str) {
+  if (!arguments.length) throw new Error('no value to encode')
+  str = String(str)
+  return new Buffer('$' + Buffer.byteLength(str, 'utf8') + CRLF + str + CRLF)
+}
+
+Resp.encodeBufBulk = function (buf) {
+  if (!Buffer.isBuffer(buf)) throw new TypeError(String(buf) + ' must be Buffer object')
+  var prefix = '$' + buf.length + CRLF
+  var buffer = new Buffer(prefix.length + buf.length + 2)
+  buffer.write(prefix)
+  buf.copy(buffer, prefix.length)
+  buffer.write(CRLF, prefix.length + buf.length)
+  return buffer
+}
+
+Resp.encodeArray = function (array) {
+  if (!Array.isArray(array)) throw new Error(String(array) + ' must be Array object')
+  var prefix = '*' + array.length + CRLF
+  var length = prefix.length
+  var bufs = [new Buffer(prefix)]
+
+  for (var buf, i = 0, len = array.length; i < len; i++) {
+    buf = array[i]
+    if (Array.isArray(buf)) buf = Resp.encodeArray(buf)
+    else if (!Buffer.isBuffer(buf)) throw new TypeError(String(buf) + ' must be RESP Buffer value')
+    bufs.push(buf)
+    length += buf.length
+  }
+
+  return Buffer.concat(bufs, length)
+}
+
+Resp.encodeRequest = function (array) {
+  if (!Array.isArray(array) || !array.length) throw new Error(String(array) + ' must be array of value')
+  var bulks = Array(array.length)
+  for (var i = 0, len = array.length; i < len; i++) {
+    bulks[i] = Buffer.isBuffer(array[i]) ? Resp.encodeBufBulk(array[i]) : Resp.encodeBulk(array[i])
+  }
+  return Resp.encodeArray(bulks)
+}
+
+// Decode a RESP buffer to RESP value
+Resp.decode = function (buffer, bufBulk) {
+  var res = parseBuffer(buffer, 0, bufBulk)
+  if (!res || res.index < buffer.length) throw new Error('Parse "' + buffer + '" failed')
+  if (res instanceof Error) throw res
+  return res.content
+}
+
+// Decode a RESP string to RESP value
+// This function is deprecated
+Resp.parse = function (string, bufBulk) {
+  console.warn('"Resp.parse" is deprecated, use "Resp.decode" instead.')
   var buffer = new Buffer(string)
-  var result = parseBuffer(buffer, 0, returnBuffers)
+  var result = parseBuffer(buffer, 0, bufBulk)
   if (!result || result.index < buffer.length) throw new Error('Parse "' + string + '" failed')
   if (result instanceof Error) throw result
   return result.content
 }
 
-Resp.stringify = function (value, forceBulkStrings) {
-  var str = stringify(value, forceBulkStrings)
+// Encode a value to RESP string
+// This function is deprecated
+Resp.stringify = function (value, bufBulk) {
+  console.warn('"Resp.stringify" is deprecated.')
+  var str = stringify(value, bufBulk === true)
   if (!str) throw new Error('Invalid value: ' + JSON.stringify(value))
   return str
 }
 
+// Encode a value to RESP buffer
+// This function is deprecated
 Resp.bufferify = function (value) {
-  var buffer = bufferify(value)
+  console.warn('"Resp.bufferify" is deprecated.')
+  var buffer = bufferify(value, true)
   if (!buffer) throw new Error('Invalid value: ' + JSON.stringify(value))
   return buffer
 }
@@ -36,7 +122,8 @@ Resp.bufferify = function (value) {
 function Resp (options) {
   if (!(this instanceof Resp)) return new Resp(options)
   options = options || {}
-  this._returnBuffers = !!options.returnBuffers
+  this._bufBulk = !!options.bufBulk
+  if (options.returnBuffers) this._bufBulk = true
 
   // legacy from old stream.
   this.writable = true
@@ -63,7 +150,7 @@ Resp.prototype.write = function (buffer) {
   }
 
   while (this._index < this._buffer.length) {
-    var result = parseBuffer(this._buffer, this._index, this._returnBuffers)
+    var result = parseBuffer(this._buffer, this._index, this._bufBulk)
     if (result == null) {
       this.emit('drain')
       return true
@@ -92,75 +179,43 @@ function clearState (ctx) {
   return ctx
 }
 
-function stringify (val, forceBulkStrings) {
-  var str = ''
-  var _str = null
-  if (val == null || Number.isNaN(val)) return forceBulkStrings ? false : '$-1' + CRLF
+// Encode a value to RESP string
+// This function is deprecated
+function stringify (val, bufBulk) {
+  var res = bufferify(val, bufBulk)
+  if (res) res = res.toString('utf8')
+  return res
+}
 
+// Encode a value to RESP buffer
+// This function is deprecated
+function bufferify (val, bufBulk) {
+  bufBulk = bufBulk !== false
   var type = typeof val
-  if (forceBulkStrings && type !== 'object') {
-    val = val + ''
-    return '$' + Buffer.byteLength(val, 'utf8') + CRLF + val + CRLF
+
+  if (val == null || Number.isNaN(val)) return Resp.encodeNull()
+  if (bufBulk && type !== 'object') {
+    return Resp.encodeBulk(val)
   }
 
   switch (type) {
     case 'string':
-      return '+' + val + CRLF
+      return Resp.encodeString(val)
     case 'number':
-      return ':' + val + CRLF
+      return Resp.encodeInteger(val)
   }
 
-  if (util.isError(val)) return '-' + val.name + ' ' + val.message + CRLF
-
-  if (util.isArray(val)) {
-    str = '*' + val.length + CRLF
-    for (var i = 0, len = val.length; i < len; i++) {
-      _str = stringify(val[i], forceBulkStrings)
-      if (!_str) return false
-      str += _str
-    }
-    return str
-  }
-  return false
-}
-
-function bufferify (val) {
-  var index, buffer
-  var str = stringify(val, true)
-
-  if (str) return new Buffer(str, 'utf8')
-
-  if (Buffer.isBuffer(val)) {
-    str = '$' + val.length + CRLF
-    buffer = new Buffer(str.length + val.length + 2)
-    buffer.write(str)
-    val.copy(buffer, str.length)
-    buffer.write(CRLF, str.length + val.length)
-    return buffer
-  }
-
+  if (util.isError(val)) return Resp.encodeError(val)
+  if (Buffer.isBuffer(val)) return Resp.encodeBufBulk(val)
   if (!Array.isArray(val)) return false
 
-  str = '*' + val.length + CRLF
-  index = str.length
-  buffer = new Buffer(Math.max(val.length, 1024) * 8)
-  buffer.write(str, 0)
-
-  for (var i = 0, len = val.length; i < len; i++) {
-    var subBuffer = bufferify(val[i])
-    if (!subBuffer) return false
-    if (subBuffer.length <= buffer.length - index) {
-      subBuffer.copy(buffer, index)
-      index += subBuffer.length
-    } else {
-      var concatBuffer = new Buffer(index + subBuffer.length)
-      buffer.copy(concatBuffer, 0, 0, index)
-      subBuffer.copy(concatBuffer, index)
-      buffer = concatBuffer
-      index = buffer.length
-    }
+  var bufs = Array(val.length)
+  for (var buf, i = 0, len = val.length; i < len; i++) {
+    buf = bufferify(val[i], bufBulk)
+    if (!buf) return false
+    bufs[i] = buf
   }
-  return index === buffer.length ? buffer : buffer.slice(0, index)
+  return Resp.encodeArray(bufs)
 }
 
 function readBuffer (buffer, index) {
@@ -173,9 +228,9 @@ function readBuffer (buffer, index) {
   }
 }
 
-function parseBuffer (buffer, index, returnBuffers) {
+function parseBuffer (buffer, index, bufBulk) {
   var result = null
-  var len = NaN
+  var num = NaN
   if (index >= buffer.length) return null
 
   switch (buffer[index]) {
@@ -186,7 +241,7 @@ function parseBuffer (buffer, index, returnBuffers) {
       result = readBuffer(buffer, index + 1)
       if (result == null) return result
       var fragment = result.content.match(/^(\S+) ([\s\S]+)$/)
-      if (!fragment) return new Error('Parse "-" failed')
+      if (!fragment) fragment = [null, 'Error', result.content]
       result.content = new Error(fragment[2])
       result.content.name = result.content.code = fragment[1]
       return result
@@ -194,40 +249,46 @@ function parseBuffer (buffer, index, returnBuffers) {
     case 58: // ':'
       result = readBuffer(buffer, index + 1)
       if (result == null) return result
-      result.content = +result.content
-      if (result.content !== result.content) return new Error('Parse ":" failed')
+      num = parseInteger(result.content)
+      if (num === false) return new Error('Parse ":" failed')
+      result.content = num
       return result
 
     case 36: // '$'
       result = readBuffer(buffer, index + 1)
       if (result == null) return result
-      len = +result.content
-      if (!result.content.length || Number.isNaN(len)) return new Error('Parse "$" failed, invalid length')
-      if (len === -1) {
+      num = parseInteger(result.content)
+      if (num === false || num < -1) return new Error('Parse "$" failed, invalid length')
+      var endIndex = result.index + num
+
+      if (num === -1) {
+        // Null Bulk
         result.content = null
-      } else if (buffer.length < result.index + len + 2) {
+      } else if (buffer.length < endIndex + 2) {
         return null
-      } else if (!isCRLF(buffer, result.index + len)) {
+      } else if (!isCRLF(buffer, endIndex)) {
         return new Error('Parse "$" failed, invalid CRLF')
       } else {
-        result.content = buffer[returnBuffers ? 'slice' : 'utf8Slice'](result.index, result.index + len)
-        result.index = result.index + len + 2
+        result.content = buffer[bufBulk ? 'slice' : 'utf8Slice'](result.index, endIndex)
+        result.index = endIndex + 2
       }
       return result
 
     case 42: // '*'
       result = readBuffer(buffer, index + 1)
       if (result == null) return result
-      len = +result.content
-      if (!result.content.length || Number.isNaN(len)) return new Error('Parse "*" failed, invalid length')
-      if (len === -1) {
+      num = parseInteger(result.content)
+      if (num === false || num < -1) return new Error('Parse "*" failed, invalid length')
+
+      if (num === -1) {
+        // Null Array
         result.content = null
-      } else if (len === 0) {
+      } else if (num === 0) {
         result.content = []
       } else {
-        result.content = Array(len)
-        for (var i = 0; i < len; i++) {
-          var _result = parseBuffer(buffer, result.index, returnBuffers)
+        result.content = Array(num)
+        for (var _result, i = 0; i < num; i++) {
+          _result = parseBuffer(buffer, result.index, bufBulk)
           if (_result == null || _result instanceof Error) return _result
           result.content[i] = _result.content
           result.index = _result.index
@@ -236,6 +297,11 @@ function parseBuffer (buffer, index, returnBuffers) {
       return result
   }
   return new Error('Invalid Chunk: parse failed')
+}
+
+function parseInteger (str) {
+  var num = +str
+  return (str && isInteger(num)) ? num : false
 }
 
 function isCRLF (buffer, index) {
