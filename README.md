@@ -213,5 +213,5 @@ MIT © [zensh](https://github.com/zensh)
 [travis-url]: https://travis-ci.org/zensh/resp.js
 [travis-image]: http://img.shields.io/travis/zensh/resp.js.svg
 
-[downloads-url]: https://npmjs.org/package/thunks
-[downloads-image]: http://img.shields.io/npm/dm/thunks.svg?style=flat-square
+[downloads-url]: https://npmjs.org/package/respjs
+[downloads-image]: http://img.shields.io/npm/dm/respjs.svg?style=flat-square
