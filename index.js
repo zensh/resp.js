@@ -90,35 +90,6 @@ Resp.decode = function (buffer, bufBulk) {
   return res.content
 }
 
-// Decode a RESP string to RESP value
-// This function is deprecated
-Resp.parse = function (string, bufBulk) {
-  console.warn('"Resp.parse" is deprecated, use "Resp.decode" instead.')
-  var buffer = new Buffer(string)
-  var result = parseBuffer(buffer, 0, bufBulk)
-  if (!result || result.index < buffer.length) throw new Error('Parse "' + string + '" failed')
-  if (result instanceof Error) throw result
-  return result.content
-}
-
-// Encode a value to RESP string
-// This function is deprecated
-Resp.stringify = function (value, bufBulk) {
-  console.warn('"Resp.stringify" is deprecated.')
-  var str = stringify(value, bufBulk === true)
-  if (!str) throw new Error('Invalid value: ' + JSON.stringify(value))
-  return str
-}
-
-// Encode a value to RESP buffer
-// This function is deprecated
-Resp.bufferify = function (value) {
-  console.warn('"Resp.bufferify" is deprecated.')
-  var buffer = bufferify(value, true)
-  if (!buffer) throw new Error('Invalid value: ' + JSON.stringify(value))
-  return buffer
-}
-
 function Resp (options) {
   if (!(this instanceof Resp)) return new Resp(options)
   options = options || {}
@@ -177,45 +148,6 @@ function clearState (ctx) {
   ctx._index = 0
   ctx._buffer = null
   return ctx
-}
-
-// Encode a value to RESP string
-// This function is deprecated
-function stringify (val, bufBulk) {
-  var res = bufferify(val, bufBulk)
-  if (res) res = res.toString('utf8')
-  return res
-}
-
-// Encode a value to RESP buffer
-// This function is deprecated
-function bufferify (val, bufBulk) {
-  bufBulk = bufBulk !== false
-  var type = typeof val
-
-  if (val == null || Number.isNaN(val)) return Resp.encodeNull()
-  if (bufBulk && type !== 'object') {
-    return Resp.encodeBulk(val)
-  }
-
-  switch (type) {
-    case 'string':
-      return Resp.encodeString(val)
-    case 'number':
-      return Resp.encodeInteger(val)
-  }
-
-  if (util.isError(val)) return Resp.encodeError(val)
-  if (Buffer.isBuffer(val)) return Resp.encodeBufBulk(val)
-  if (!Array.isArray(val)) return false
-
-  var bufs = Array(val.length)
-  for (var buf, i = 0, len = val.length; i < len; i++) {
-    buf = bufferify(val[i], bufBulk)
-    if (!buf) return false
-    bufs[i] = buf
-  }
-  return Resp.encodeArray(bufs)
 }
 
 function readBuffer (buffer, index) {

@@ -4,7 +4,7 @@
   "authors": [
     "Yan Qing <admin@zensh.com>"
   ],
-  "version": "3.0.1",
+  "version": "3.1.0",
   "main": "index.js",
   "repository": {
     "type": "git",
@@ -21,11 +21,13 @@
   ],
   "dependencies": {},
   "devDependencies": {
-    "mocha": "^2.3.4",
-    "standard": "^5.4.1"
+    "mocha": "^2.4.5",
+    "standard": "^6.0.8",
+    "thunk-mocha": "^1.0.3"
   },
   "scripts": {
-    "test": "standard && mocha -t 100000"
+    "test": "standard && mocha -t 100000 -r thunk-mocha",
+    "example": "mocha -t 100000 -r thunk-mocha example/redis_client.js"
   },
   "files": [
     "README.md",

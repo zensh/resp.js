@@ -25,25 +25,12 @@ npm install respjs
 
 ## Usage
 
-```js
-var resp = new Resp({bufBulk: false})
-  .on('error', function (error) {
-    console.log('error', error)
-  })
-  .on('drain', function () {
-    // means it need more chunks to decode.
-  })
-  .on('data', function (data) {
-    // your data!
-    console.log(data)
-  })
+simple redis client (with test):
+https://github.com/zensh/resp.js/blob/master/example/redis_client.js
 
-  var socket = net.createConnection({
-    host: '127.0.0.1',
-    port: 6379
-  })
-  // let's read chunks from socket!
-  socket.pipe(resp)
+Run:
+```sh
+npm run example
 ```
 
 ## API
@@ -190,18 +177,6 @@ var buf = Resp.encodeArray([Resp.encodeNull(), Resp.encodeString('OK')])
 // <Buffer 2a 32 0d 0a 24 2d 31 0d 0a 2b 4f 4b 0d 0a>
 var str = buf.toString() // *2\r\n$-1\r\n+OK\r\n
 ```
-
-### Class Method: Resp.bufferify(value) **DEPRECATED**
-
-Encode `value` to `RESP` buffer.
-
-### Class Method: Resp.stringify(value, bufBulk) **DEPRECATED**
-
-Encode `value` to `RESP` string.
-
-### Class Method: Resp.parse(string, bufBulk) **DEPRECATED**
-
-Decode `RESP` `string` to value.
 
 ## License
 
