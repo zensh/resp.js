@@ -3,7 +3,7 @@
  * RESP.js
  * https://github.com/zensh/resp.js
  *
- * Copyright (c) 2014 Yan Qing
+ * Copyright (c) 2014-2016 Yan Qing
  * Licensed under the MIT license.
  */
 
