@@ -1,7 +1,7 @@
 'use strict'
-/*global describe, it*/
 
 const net = require('net')
+const tman = require('tman')
 const EventEmitter = require('events').EventEmitter
 const assert = require('assert')
 const Resp = require('..')
@@ -40,29 +40,29 @@ class Client extends EventEmitter {
   }
 }
 
-// test
-describe('simple redis client', function () {
+// tman example/redis_client.js
+tman('simple redis client', function () {
   let client = new Client(6379)
 
-  it('info', function *() {
+  tman.it('info', function * () {
     let res = yield client.cmd('info')
     console.log('INFO:', res)
     assert.ok(res.indexOf('redis_version') > 0)
   })
 
-  it('set', function *() {
+  tman.it('set', function * () {
     let res = yield client.cmd('set', 'resp', 'hello')
     console.log('SET:', res)
     assert.strictEqual(res, 'OK')
   })
 
-  it('get', function *() {
+  tman.it('get', function * () {
     let res = yield client.cmd('get', 'resp')
     console.log('GET:', res)
     assert.strictEqual(res, 'hello')
   })
 
-  it('ping', function *() {
+  tman.it('ping', function * () {
     let count = 10000
     let time = Date.now()
     while (count--) {
