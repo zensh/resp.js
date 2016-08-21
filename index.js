@@ -1,4 +1,3 @@
-'use strict'
 /*
  * RESP.js
  * https://github.com/zensh/resp.js
@@ -7,12 +6,9 @@
  * Licensed under the MIT license.
  */
 
-var util = require('util')
-var EventEmitter = require('events').EventEmitter
-var isInteger = Number.isInteger || function (num) {
-  return num === Math.floor(num)
-}
-var CRLF = '\r\n'
+const util = require('util')
+const EventEmitter = require('events')
+const CRLF = '\r\n'
 
 module.exports = Resp
 Resp.Resp = Resp
@@ -36,7 +32,7 @@ Resp.encodeError = function (err) {
 }
 
 Resp.encodeInteger = function (num) {
-  if (!isInteger(num)) throw new TypeError(String(num) + ' must be Integer')
+  if (!Number.isInteger(num)) throw new TypeError(String(num) + ' must be Integer')
   return new Buffer(':' + num + CRLF)
 }
 
@@ -74,7 +70,9 @@ Resp.encodeArray = function (array) {
 }
 
 Resp.encodeRequest = function (array) {
-  if (!Array.isArray(array) || !array.length) throw new Error(String(array) + ' must be array of value')
+  if (!Array.isArray(array) || !array.length) {
+    throw new Error(String(array) + ' must be array of value')
+  }
   var bulks = Array(array.length)
   for (var i = 0, len = array.length; i < len; i++) {
     bulks[i] = Buffer.isBuffer(array[i]) ? Resp.encodeBufBulk(array[i]) : Resp.encodeBulk(array[i])
@@ -92,6 +90,8 @@ Resp.decode = function (buffer, bufBulk) {
 
 function Resp (options) {
   if (!(this instanceof Resp)) return new Resp(options)
+  EventEmitter.call(this)
+
   options = options || {}
   this._bufBulk = !!options.bufBulk
   if (options.returnBuffers) this._bufBulk = true
@@ -99,7 +99,6 @@ function Resp (options) {
   // legacy from old stream.
   this.writable = true
   clearState(this)
-  EventEmitter.call(this)
 }
 util.inherits(Resp, EventEmitter)
 
@@ -233,7 +232,7 @@ function parseBuffer (buffer, index, bufBulk) {
 
 function parseInteger (str) {
   var num = +str
-  return (str && isInteger(num)) ? num : false
+  return (str && Number.isInteger(num)) ? num : false
 }
 
 function isCRLF (buffer, index) {

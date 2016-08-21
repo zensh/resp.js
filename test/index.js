@@ -1,8 +1,7 @@
-'use strict'
 
-var assert = require('assert')
-var tman = require('tman')
-var Resp = require('..')
+const assert = require('assert')
+const tman = require('tman')
+const Resp = require('..')
 
 tman.suite('Respjs', function () {
   tman.suite('encode', function () {

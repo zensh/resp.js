@@ -4,11 +4,14 @@
   "authors": [
     "Yan Qing <admin@zensh.com>"
   ],
-  "version": "3.1.2",
+  "version": "3.2.0",
   "main": "index.js",
   "repository": {
     "type": "git",
     "url": "git@github.com:zensh/resp.js.git"
+  },
+  "engines": {
+    "node": ">= 0.12"
   },
   "homepage": "https://github.com/zensh/resp.js",
   "keywords": [
@@ -21,8 +24,8 @@
   ],
   "dependencies": {},
   "devDependencies": {
-    "standard": "^7.0.1",
-    "tman": "^0.9.4"
+    "standard": "^7.1.2",
+    "tman": "^1.0.6"
   },
   "scripts": {
     "test": "standard && tman",
