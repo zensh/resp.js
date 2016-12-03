@@ -133,7 +133,7 @@ tman.suite('Respjs', function () {
 
     tman.it('new Resp()', function (done) {
       var result = []
-      var reply = Resp()
+      var reply = new Resp()
 
       reply
         .on('data', function (data) {
@@ -155,7 +155,7 @@ tman.suite('Respjs', function () {
     })
 
     tman.it('new Resp({bufBulk: true})', function (done) {
-      var reply = Resp({bufBulk: true})
+      var reply = new Resp({bufBulk: true})
 
       reply
         .on('data', function (data) {
@@ -170,7 +170,7 @@ tman.suite('Respjs', function () {
 
     tman.it('new Resp(): Pipelining data', function (done) {
       var result = []
-      var reply = Resp()
+      var reply = new Resp()
 
       reply
         .on('data', function (data) {
@@ -188,7 +188,7 @@ tman.suite('Respjs', function () {
     })
 
     tman.it('new Resp(): with non resp buffer', function (done) {
-      var reply = Resp()
+      var reply = new Resp()
 
       reply
         .on('error', function (error) {
@@ -202,7 +202,7 @@ tman.suite('Respjs', function () {
 
     tman.it('new Resp(): with error data', function (done) {
       var result = []
-      var reply = Resp()
+      var reply = new Resp()
 
       reply
         .on('data', function (data) {
@@ -227,7 +227,7 @@ tman.suite('Respjs', function () {
       this.timeout(100000)
 
       var result = []
-      var reply = Resp()
+      var reply = new Resp()
       var buf = Resp.encodeArray([
         Resp.encodeNull(),
         Resp.encodeString('OKOKOKOK'),
