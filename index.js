@@ -11,7 +11,8 @@ const util = require('util')
 const EventEmitter = require('events')
 
 const CRLF = '\r\n'
-const newBuf = Buffer.from || ((str) => new Buffer(str))
+// `Buffer.from` in old version do not support string.
+const newBuf = (Buffer.alloc && Buffer.from) || ((str) => new Buffer(str))
 const allocBuffer = Buffer.allocUnsafe || ((size) => new Buffer(size))
 
 class Resp extends EventEmitter {
