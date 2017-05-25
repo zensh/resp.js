@@ -1,3 +1,4 @@
+'use strict'
 
 const assert = require('assert')
 const tman = require('tman')
@@ -48,8 +49,8 @@ tman.suite('Respjs', function () {
     })
 
     tman.it('Resp.encodeBufBulk(buf)', function () {
-      assert.strictEqual(Resp.encodeBufBulk(new Buffer('buf')).toString(), '$3\r\nbuf\r\n')
-      assert.strictEqual(Resp.encodeBufBulk(new Buffer('')).toString(), '$0\r\n\r\n')
+      assert.strictEqual(Resp.encodeBufBulk(Buffer.from('buf')).toString(), '$3\r\nbuf\r\n')
+      assert.strictEqual(Resp.encodeBufBulk(Buffer.from('')).toString(), '$0\r\n\r\n')
       assert.throws(function () { Resp.encodeBufBulk() })
       assert.throws(function () { Resp.encodeBufBulk(null) })
       assert.throws(function () { Resp.encodeBufBulk('123') })
@@ -69,7 +70,7 @@ tman.suite('Respjs', function () {
       assert.strictEqual(Resp.encodeRequest(['info']).toString(), '*1\r\n$4\r\ninfo\r\n')
       assert.strictEqual(Resp.encodeRequest(['set', 'key', 123]).toString(), '*3\r\n$3\r\nset\r\n$3\r\nkey\r\n$3\r\n123\r\n')
       assert.strictEqual(Resp.encodeRequest(['set', 'key', '123']).toString(), '*3\r\n$3\r\nset\r\n$3\r\nkey\r\n$3\r\n123\r\n')
-      assert.strictEqual(Resp.encodeRequest(['set', 'key', new Buffer('123')]).toString(), '*3\r\n$3\r\nset\r\n$3\r\nkey\r\n$3\r\n123\r\n')
+      assert.strictEqual(Resp.encodeRequest(['set', 'key', Buffer.from('123')]).toString(), '*3\r\n$3\r\nset\r\n$3\r\nkey\r\n$3\r\n123\r\n')
 
       assert.throws(function () { Resp.encodeRequest([]) })
       assert.throws(function () { Resp.encodeRequest('') })
@@ -90,7 +91,8 @@ tman.suite('Respjs', function () {
 
       assert.strictEqual(Resp.decode(Resp.encodeError(new Error('err'))) instanceof Error, true)
       assert.strictEqual(Resp.decode(Resp.encodeError(new Error('err')), true) instanceof Error, true)
-      var err = Resp.decode(Resp.encodeError(new TypeError('err')))
+
+      let err = Resp.decode(Resp.encodeError(new TypeError('err')))
       assert.strictEqual(err.name, 'TypeError')
       assert.strictEqual(err.code, 'TypeError')
       assert.strictEqual(err.message, 'err')
@@ -101,11 +103,11 @@ tman.suite('Respjs', function () {
 
       assert.strictEqual(Resp.decode(Resp.encodeBulk(123)), '123')
       assert.strictEqual(Resp.decode(Resp.encodeBulk('123')), '123')
-      assert.strictEqual(Resp.decode(Resp.encodeBulk(123), true).equals(new Buffer('123')), true)
-      assert.strictEqual(Resp.decode(Resp.encodeBulk('123'), true).equals(new Buffer('123')), true)
+      assert.strictEqual(Resp.decode(Resp.encodeBulk(123), true).equals(Buffer.from('123')), true)
+      assert.strictEqual(Resp.decode(Resp.encodeBulk('123'), true).equals(Buffer.from('123')), true)
 
-      assert.strictEqual(Resp.decode(Resp.encodeBufBulk(new Buffer('123'))), '123')
-      assert.strictEqual(Resp.decode(Resp.encodeBufBulk(new Buffer('123')), true).equals(new Buffer('123')), true)
+      assert.strictEqual(Resp.decode(Resp.encodeBufBulk(Buffer.from('123'))), '123')
+      assert.strictEqual(Resp.decode(Resp.encodeBufBulk(Buffer.from('123')), true).equals(Buffer.from('123')), true)
 
       assert.deepEqual(Resp.decode(Resp.encodeArray([])), [])
       assert.deepEqual(Resp.decode(Resp.encodeArray([[], [[]]])), [[], [[]]])
@@ -114,26 +116,26 @@ tman.suite('Respjs', function () {
 
       assert.deepEqual(Resp.decode(Resp.encodeRequest(['set', 'key', 123])), ['set', 'key', '123'])
       assert.deepEqual(Resp.decode(Resp.encodeRequest(['set', 'key', 123]), true),
-        [new Buffer('set'), new Buffer('key'), new Buffer('123')])
+        [Buffer.from('set'), Buffer.from('key'), Buffer.from('123')])
 
       assert.throws(function () { Resp.decode() })
       assert.throws(function () { Resp.decode(null) })
       assert.throws(function () { Resp.decode(1) })
-      assert.throws(function () { Resp.decode(new Buffer('123')) })
+      assert.throws(function () { Resp.decode(Buffer.from('123')) })
       assert.throws(function () {
-        var buf = Resp.encodeBulk('123')
+        let buf = Resp.encodeBulk('123')
         buf[buf.length - 1] = 0
         Resp.decode(buf)
       })
       assert.throws(function () {
-        var buf = Buffer.concat([Resp.encodeBulk('123'), new Buffer('1')])
+        let buf = Buffer.concat([Resp.encodeBulk('123'), Buffer.from('1')])
         Resp.decode(buf)
       })
     })
 
     tman.it('new Resp()', function (done) {
-      var result = []
-      var reply = new Resp()
+      let result = []
+      let reply = new Resp()
 
       reply
         .on('data', function (data) {
@@ -155,7 +157,7 @@ tman.suite('Respjs', function () {
     })
 
     tman.it('new Resp({bufBulk: true})', function (done) {
-      var reply = new Resp({bufBulk: true})
+      let reply = new Resp({bufBulk: true})
 
       reply
         .on('data', function (data) {
@@ -163,14 +165,14 @@ tman.suite('Respjs', function () {
         })
         .on('finish', done)
 
-      reply.write(new Buffer('$6\r\n中文\r\n'))
+      reply.write(Buffer.from('$6\r\n中文\r\n'))
       reply.write(Resp.encodeBulk('abc'))
       reply.end()
     })
 
     tman.it('new Resp(): Pipelining data', function (done) {
-      var result = []
-      var reply = new Resp()
+      let result = []
+      let reply = new Resp()
 
       reply
         .on('data', function (data) {
@@ -181,14 +183,14 @@ tman.suite('Respjs', function () {
           done()
         })
 
-      reply.write(new Buffer('$6\r\n中文\r\n$0'))
-      reply.write(new Buffer('\r\n\r\n'))
+      reply.write(Buffer.from('$6\r\n中文\r\n$0'))
+      reply.write(Buffer.from('\r\n\r\n'))
       reply.write(Resp.encodeBulk(123))
       reply.end()
     })
 
     tman.it('new Resp(): with non resp buffer', function (done) {
-      var reply = new Resp()
+      let reply = new Resp()
 
       reply
         .on('error', function (error) {
@@ -197,12 +199,12 @@ tman.suite('Respjs', function () {
           done()
         })
 
-      reply.write(new Buffer('non resp buffer'))
+      reply.write(Buffer.from('non resp buffer'))
     })
 
     tman.it('new Resp(): with error data', function (done) {
-      var result = []
-      var reply = new Resp()
+      let result = []
+      let reply = new Resp()
 
       reply
         .on('data', function (data) {
@@ -217,8 +219,8 @@ tman.suite('Respjs', function () {
           done()
         })
 
-      reply.write(new Buffer('$6\r\n中文1\r\n$0'))
-      reply.write(new Buffer('\r\n\r\n'))
+      reply.write(Buffer.from('$6\r\n中文1\r\n$0'))
+      reply.write(Buffer.from('\r\n\r\n'))
       reply.write(Resp.encodeBulk('123'))
       reply.end()
     })
@@ -226,18 +228,18 @@ tman.suite('Respjs', function () {
     tman.it('new Resp(): chaos', function (done) {
       this.timeout(100000)
 
-      var result = []
-      var reply = new Resp()
-      var buf = Resp.encodeArray([
+      let result = []
+      let reply = new Resp()
+      let buf = Resp.encodeArray([
         Resp.encodeNull(),
         Resp.encodeString('OKOKOKOK'),
         Resp.encodeInteger(123456789),
         Resp.encodeBulk('message'),
-        Resp.encodeBufBulk(new Buffer('buf')),
+        Resp.encodeBufBulk(Buffer.from('buf')),
         Resp.encodeRequest(['set', 'key', '123正正abc'])
       ])
-      var bufs = []
-      for (var i = 0; i < 10000; i++) bufs.push(buf)
+      let bufs = []
+      for (let i = 0; i < 10000; i++) bufs.push(buf)
       bufs = Buffer.concat(bufs)
 
       reply
@@ -257,13 +259,13 @@ tman.suite('Respjs', function () {
           done()
         })
 
-      var start = 0
-      var length = bufs.length
+      let start = 0
+      let length = bufs.length
       consumer()
 
       function consumer () {
         if (start >= length) return reply.end()
-        var end = start + Math.ceil(Math.random() * 100)
+        let end = start + Math.ceil(Math.random() * 100)
         if (end > length) end = length
         reply.write(bufs.slice(start, end))
         start = end

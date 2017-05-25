@@ -14,10 +14,10 @@ class Client extends EventEmitter {
     this._resp = new Resp()
       .on('error', (error) => this.emit('error', error))
       .on('data', (data) => {
-        let commandCallback = this._queue.shift()
-        if (!commandCallback) return this.emit('error', new Error('Unexpected reply: ' + data))
-        if (data instanceof Error) commandCallback(data)
-        else commandCallback(null, data)
+        let cb = this._queue.shift()
+        if (!cb) return this.emit('error', new Error('Unexpected reply: ' + data))
+        if (data instanceof Error) cb[1](data)
+        else cb[0](data)
       })
     this._socket = net.createConnection.apply(null, arguments)
       .on('connect', () => this.emit('connect'))
@@ -33,10 +33,10 @@ class Client extends EventEmitter {
     if (['psubscribe', 'punsubscribe', 'subscribe', 'unsubscribe', 'monitor'].indexOf(args[0].toLowerCase()) !== -1) {
       throw new Error('Unsupport command: ' + args[0])
     }
-    return (callback) => {
-      this._queue.push(callback)
+    return new Promise((resolve, reject) => {
+      this._queue.push([resolve, reject])
       this._socket.write(Resp.encodeRequest(args))
-    }
+    })
   }
 }
 

@@ -1,5 +1,5 @@
-RESP.js
-====
+# RESP.js
+
 An implementation of REdis Serialization Protocol (RESP).
 
 [![NPM version][npm-image]][npm-url]
@@ -7,6 +7,8 @@ An implementation of REdis Serialization Protocol (RESP).
 [![Downloads][downloads-image]][downloads-url]
 
 ## Rust version: https://github.com/iorust/resp
+
+## Golang version: https://github.com/teambition/respgo
 
 ## Implementations:
 
@@ -36,7 +38,7 @@ npm run example
 ## API
 
 ```js
-var Resp = require('respjs')
+const Resp = require('respjs')
 ```
 
 ### Class Resp
@@ -49,7 +51,7 @@ Resp is a EventEmitter similar to `Writable` stream. It accept pipelining socket
 - `bufBulk` {Boolean} return buffers for bulk reply, default to `false`
 
 ```js
-var resp = new Resp({
+const resp = new Resp({
   bufBulk: true
 })
 ```
@@ -98,9 +100,9 @@ Resp.decode(Resp.encodeBulk(123)) // '123'
 Encode a array of value to one `RESP` buffer. It is usefull to encode a request.
 
 ```js
-var buf = Resp.encodeRequest(['set', 'key', 123])
+let buf = Resp.encodeRequest(['set', 'key', 123])
 // <Buffer 2a 33 0d 0a 24 33 0d 0a 73 65 74 0d 0a 24 33 0d 0a 6b 65 79 0d 0a 24 33 0d 0a 31 32 33 0d 0a>
-var str = buf.toString() // *3\r\n$3\r\nset\r\n$3\r\nkey\r\n$3\r\n123\r\n
+let str = buf.toString() // *3\r\n$3\r\nset\r\n$3\r\nkey\r\n$3\r\n123\r\n
 
 Resp.encodeRequest(['set', 'key', new Buffer('123')]) // support buffer!
 ```
@@ -110,8 +112,8 @@ Resp.encodeRequest(['set', 'key', new Buffer('123')]) // support buffer!
 Encode RESP's Null value to `RESP` buffer.
 
 ```js
-var buf = Resp.encodeNull() // <Buffer 24 2d 31 0d 0a>
-var str = buf.toString() // $-1\r\n
+let buf = Resp.encodeNull() // <Buffer 24 2d 31 0d 0a>
+let str = buf.toString() // $-1\r\n
 ```
 
 ### Class Method: Resp.encodeNullArray()
@@ -119,8 +121,8 @@ var str = buf.toString() // $-1\r\n
 Encode RESP's Null Array value to `RESP` buffer.
 
 ```js
-var buf = Resp.encodeNull() // <Buffer 2a 2d 31 0d 0a>
-var str = buf.toString() // *-1\r\n
+let buf = Resp.encodeNull() // <Buffer 2a 2d 31 0d 0a>
+let str = buf.toString() // *-1\r\n
 ```
 
 ### Class Method: Resp.encodeString(str)
@@ -128,8 +130,8 @@ var str = buf.toString() // *-1\r\n
 Encode string to `RESP` buffer.
 
 ```js
-var buf = Resp.encodeString('OK') // <Buffer 2b 4f 4b 0d 0a>
-var str = buf.toString() // +OK\r\n
+let buf = Resp.encodeString('OK') // <Buffer 2b 4f 4b 0d 0a>
+let str = buf.toString() // +OK\r\n
 ```
 
 ### Class Method: Resp.encodeError(error)
@@ -137,8 +139,8 @@ var str = buf.toString() // +OK\r\n
 Encode error object to `RESP` buffer.
 
 ```js
-var buf = Resp.encodeError(new Error('error')) // <Buffer 2d 45 72 72 6f 72 20 65 72 72 6f 72 0d 0a>
-var str = buf.toString() // -Error error\r\n
+let buf = Resp.encodeError(new Error('error')) // <Buffer 2d 45 72 72 6f 72 20 65 72 72 6f 72 0d 0a>
+let str = buf.toString() // -Error error\r\n
 ```
 
 ### Class Method: Resp.encodeInteger(num)
@@ -146,8 +148,8 @@ var str = buf.toString() // -Error error\r\n
 Encode integer to `RESP` buffer.
 
 ```js
-var buf = Resp.encodeInteger(123) // <Buffer 3a 31 32 33 0d 0a>
-var str = buf.toString() // :123\r\n
+let buf = Resp.encodeInteger(123) // <Buffer 3a 31 32 33 0d 0a>
+let str = buf.toString() // :123\r\n
 ```
 
 ### Class Method: Resp.encodeBulk(str)
@@ -155,8 +157,8 @@ var str = buf.toString() // :123\r\n
 Encode RESP's bulk string to `RESP` buffer.
 
 ```js
-var buf = Resp.encodeBulk('message') // <Buffer 24 37 0d 0a 6d 65 73 73 61 67 65 0d 0a>
-var str = buf.toString() // $7\r\nmessage\r\n
+let buf = Resp.encodeBulk('message') // <Buffer 24 37 0d 0a 6d 65 73 73 61 67 65 0d 0a>
+let str = buf.toString() // $7\r\nmessage\r\n
 ```
 
 ### Class Method: Resp.encodeBufBulk(buf)
@@ -164,8 +166,8 @@ var str = buf.toString() // $7\r\nmessage\r\n
 Encode RESP's bulk buffer to `RESP` buffer.
 
 ```js
-var buf = Resp.encodeBufBulk(new Buffer('buf')) // <Buffer 24 33 0d 0a 62 75 66 0d 0a>
-var str = buf.toString() // $3\r\nbuf\r\n
+let buf = Resp.encodeBufBulk(new Buffer('buf')) // <Buffer 24 33 0d 0a 62 75 66 0d 0a>
+let str = buf.toString() // $3\r\nbuf\r\n
 ```
 
 ### Class Method: Resp.encodeArray([RESP_buffer, ...])
@@ -173,9 +175,9 @@ var str = buf.toString() // $3\r\nbuf\r\n
 Encode a array of RESP' value buffer to one `RESP` buffer.
 
 ```js
-var buf = Resp.encodeArray([Resp.encodeNull(), Resp.encodeString('OK')])
+let buf = Resp.encodeArray([Resp.encodeNull(), Resp.encodeString('OK')])
 // <Buffer 2a 32 0d 0a 24 2d 31 0d 0a 2b 4f 4b 0d 0a>
-var str = buf.toString() // *2\r\n$-1\r\n+OK\r\n
+let str = buf.toString() // *2\r\n$-1\r\n+OK\r\n
 ```
 
 ## License
