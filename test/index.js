@@ -272,5 +272,37 @@ tman.suite('Respjs', function () {
         setTimeout(consumer, 0)
       }
     })
+
+    tman.it.skip('new Resp(): bench', function (done) {
+      this.timeout(100000)
+
+      let result = []
+      let reply = new Resp()
+
+      let buf = Resp.encodeArray([
+        Resp.encodeString('OK'),
+        Resp.encodeString('QUEUED'),
+        Resp.encodeString('QUEUED'),
+        Resp.encodeArray([Resp.encodeString('OK'), Resp.encodeInteger(1)])
+      ])
+      let bufs = []
+      for (let i = 0; i < 10000; i++) bufs.push(buf)
+      bufs = Buffer.concat(bufs)
+      console.log('bytes', bufs.length)
+
+      reply
+        .on('data', function (data) {
+          assert.deepEqual(data, ['OK', 'QUEUED', 'QUEUED', ['OK', 1]])
+          result.push(data)
+        })
+        .on('finish', function () {
+          assert.strictEqual(result.length, 10000)
+          console.timeEnd('time')
+          done()
+        })
+      console.time('time')
+      reply.write(bufs)
+      reply.end()
+    })
   })
 })

@@ -25,7 +25,7 @@
   "dependencies": {},
   "devDependencies": {
     "standard": "^10.0.2",
-    "tman": "^1.6.9"
+    "tman": "^1.7.1"
   },
   "scripts": {
     "test": "standard && tman",
