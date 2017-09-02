@@ -27,3 +27,4 @@ debug
 
 # Users Environment Variables
 .lock-wscript
+.esm-cache

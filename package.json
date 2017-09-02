@@ -4,8 +4,9 @@
   "authors": [
     "Yan Qing <admin@zensh.com>"
   ],
-  "version": "4.1.1",
-  "main": "index.js",
+  "version": "4.1.2",
+  "main": "./index",
+  "jsnext:main": "index.mjs",
   "repository": {
     "type": "git",
     "url": "git@github.com:zensh/resp.js.git"
@@ -24,8 +25,9 @@
   ],
   "dependencies": {},
   "devDependencies": {
-    "standard": "^10.0.2",
-    "tman": "^1.7.1"
+    "@std/esm": "^0.7.1",
+    "standard": "^10.0.3",
+    "tman": "^1.7.2"
   },
   "scripts": {
     "test": "standard && tman",
@@ -33,6 +35,7 @@
   },
   "files": [
     "README.md",
-    "index.js"
+    "index.js",
+    "index.mjs"
   ]
 }
