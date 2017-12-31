@@ -181,7 +181,7 @@ function parseBuffer (buf, index, bufBulk) {
       result = readBuffer(buf, index + 1)
       if (result == null) return result
       num = parseInteger(result.content)
-      if (num === false) return new Error('Parse ":" failed')
+      if (num == null) return new Error('Parse ":" failed')
       result.content = num
       return result
 
@@ -189,7 +189,7 @@ function parseBuffer (buf, index, bufBulk) {
       result = readBuffer(buf, index + 1)
       if (result == null) return result
       num = parseInteger(result.content)
-      if (num === false || num < -1) return new Error('Parse "$" failed, invalid length')
+      if (num == null || num < -1) return new Error('Parse "$" failed, invalid length')
       let endIndex = result.index + num
 
       if (num === -1) {
@@ -209,7 +209,7 @@ function parseBuffer (buf, index, bufBulk) {
       result = readBuffer(buf, index + 1)
       if (result == null) return result
       num = parseInteger(result.content)
-      if (num === false || num < -1) return new Error('Parse "*" failed, invalid length')
+      if (num == null || num < -1) return new Error('Parse "*" failed, invalid length')
 
       if (num === -1) {
         // Null Array
@@ -232,7 +232,7 @@ function parseBuffer (buf, index, bufBulk) {
 
 function parseInteger (str) {
   let num = +str
-  return (str && Number.isInteger(num)) ? num : false
+  return (str && Number.isInteger(num)) ? num : null
 }
 
 function isCRLF (buf, i) {
