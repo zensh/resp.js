@@ -276,7 +276,7 @@ function test (Resp) {
         }
       })
 
-      tman.it.skip('new Resp(): bench', function (done) {
+      tman.it('new Resp(): bench', function (done) {
         this.timeout(100000)
 
         let result = []
@@ -291,7 +291,6 @@ function test (Resp) {
         let bufs = []
         for (let i = 0; i < 10000; i++) bufs.push(buf)
         bufs = Buffer.concat(bufs)
-        console.log('bytes', bufs.length)
 
         reply
           .on('data', function (data) {

@@ -3,7 +3,7 @@
  * RESP.js
  * https://github.com/zensh/resp.js
  *
- * Copyright (c) 2014-2017 Yan Qing
+ * Copyright (c) 2014-2018 Yan Qing
  * Licensed under the MIT license.
  */
 
@@ -12,17 +12,6 @@ import EventEmitter from 'events'
 const CRLF = '\r\n'
 
 class Resp extends EventEmitter {
-  constructor (options) {
-    super()
-
-    options = options || {}
-    this._bufBulk = !!options.bufBulk
-
-    // legacy from old stream.
-    this.writable = true
-    clearState(this)
-  }
-
   static encodeNull () {
     return Buffer.from('$-1\r\n')
   }
@@ -96,6 +85,17 @@ class Resp extends EventEmitter {
     if (!res || res.index < buf.length) throw new Error('Parse "' + buf + '" failed')
     if (res instanceof Error) throw res
     return res.content
+  }
+
+  constructor (options) {
+    super()
+
+    options = options || {}
+    this._bufBulk = !!options.bufBulk
+
+    // legacy from old stream.
+    this.writable = true
+    clearState(this)
   }
 
   write (buf) {
