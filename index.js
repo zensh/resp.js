@@ -42,8 +42,8 @@ class Resp extends EventEmitter {
 
   static encodeBufBulk (buf) {
     if (!Buffer.isBuffer(buf)) throw new TypeError(String(buf) + ' must be Buffer object')
-    let prefix = '$' + buf.length + CRLF
-    let buffer = Buffer.allocUnsafe(prefix.length + buf.length + 2)
+    const prefix = '$' + buf.length + CRLF
+    const buffer = Buffer.allocUnsafe(prefix.length + buf.length + 2)
     buffer.write(prefix)
     buf.copy(buffer, prefix.length)
     buffer.write(CRLF, prefix.length + buf.length)
@@ -52,9 +52,9 @@ class Resp extends EventEmitter {
 
   static encodeArray (arr) {
     if (!Array.isArray(arr)) throw new Error(String(arr) + ' must be Array object')
-    let prefix = '*' + arr.length + CRLF
+    const prefix = '*' + arr.length + CRLF
     let length = prefix.length
-    let bufs = [Buffer.from(prefix)]
+    const bufs = [Buffer.from(prefix)]
 
     for (let buf, i = 0, len = arr.length; i < len; i++) {
       buf = arr[i]
@@ -71,7 +71,7 @@ class Resp extends EventEmitter {
     if (!Array.isArray(arr) || arr.length === 0) {
       throw new Error(String(arr) + ' must be array of value')
     }
-    let bulks = Array(arr.length)
+    const bulks = Array(arr.length)
     for (let i = 0, len = arr.length; i < len; i++) {
       bulks[i] = Buffer.isBuffer(arr[i]) ? Resp.encodeBufBulk(arr[i]) : Resp.encodeBulk(arr[i])
     }
@@ -80,7 +80,7 @@ class Resp extends EventEmitter {
 
   // Decode a RESP buffer to RESP value
   static decode (buf, bufBulk) {
-    let res = parseBuffer(buf, 0, bufBulk)
+    const res = parseBuffer(buf, 0, bufBulk)
     if (!res || res.index < buf.length) throw new Error('Parse "' + buf + '" failed')
     if (res instanceof Error) throw res
     return res.content
@@ -105,8 +105,8 @@ class Resp extends EventEmitter {
 
     if (!this._buf) this._buf = buf
     else {
-      let ret = this._buf.length - this._pos
-      let _buf = Buffer.allocUnsafe(buf.length + ret)
+      const ret = this._buf.length - this._pos
+      const _buf = Buffer.allocUnsafe(buf.length + ret)
 
       this._buf.copy(_buf, 0, this._pos)
       buf.copy(_buf, ret)
@@ -115,7 +115,7 @@ class Resp extends EventEmitter {
     }
 
     while (this._pos < this._buf.length) {
-      let result = parseBuffer(this._buf, this._pos, this._bufBulk)
+      const result = parseBuffer(this._buf, this._pos, this._bufBulk)
       if (result == null) {
         this.emit('drain')
         return true
@@ -153,8 +153,8 @@ class ReadRes {
 }
 
 function readBuffer (buf, i) {
-  let start = i
-  let len = buf.length
+  const start = i
+  const len = buf.length
   while (i < len && !isCRLF(buf, i)) i++
   return i >= len ? null : new ReadRes(buf.utf8Slice(start, i), i + 2)
 }
@@ -190,7 +190,7 @@ function parseBuffer (buf, index, bufBulk) {
       if (result == null) return result
       num = parseInteger(result.content)
       if (num == null || num < -1) return new Error('Parse "$" failed, invalid length')
-      let endIndex = result.index + num
+      const endIndex = result.index + num
 
       if (num === -1) {
         // Null Bulk
@@ -231,7 +231,7 @@ function parseBuffer (buf, index, bufBulk) {
 }
 
 function parseInteger (str) {
-  let num = +str
+  const num = +str
   return (str && Number.isInteger(num)) ? num : null
 }
 
