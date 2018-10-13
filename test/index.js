@@ -95,7 +95,7 @@ function test (Resp) {
         assert.strictEqual(Resp.decode(Resp.encodeError(new Error('err'))) instanceof Error, true)
         assert.strictEqual(Resp.decode(Resp.encodeError(new Error('err')), true) instanceof Error, true)
 
-        let err = Resp.decode(Resp.encodeError(new TypeError('err')))
+        const err = Resp.decode(Resp.encodeError(new TypeError('err')))
         assert.strictEqual(err.name, 'TypeError')
         assert.strictEqual(err.code, 'TypeError')
         assert.strictEqual(err.message, 'err')
@@ -126,19 +126,19 @@ function test (Resp) {
         assert.throws(function () { Resp.decode(1) })
         assert.throws(function () { Resp.decode(Buffer.from('123')) })
         assert.throws(function () {
-          let buf = Resp.encodeBulk('123')
+          const buf = Resp.encodeBulk('123')
           buf[buf.length - 1] = 0
           Resp.decode(buf)
         })
         assert.throws(function () {
-          let buf = Buffer.concat([Resp.encodeBulk('123'), Buffer.from('1')])
+          const buf = Buffer.concat([Resp.encodeBulk('123'), Buffer.from('1')])
           Resp.decode(buf)
         })
       })
 
       tman.it('new Resp()', function (done) {
-        let result = []
-        let reply = new Resp()
+        const result = []
+        const reply = new Resp()
 
         reply
           .on('data', function (data) {
@@ -160,7 +160,7 @@ function test (Resp) {
       })
 
       tman.it('new Resp({bufBulk: true})', function (done) {
-        let reply = new Resp({bufBulk: true})
+        const reply = new Resp({bufBulk: true})
 
         reply
           .on('data', function (data) {
@@ -174,8 +174,8 @@ function test (Resp) {
       })
 
       tman.it('new Resp(): Pipelining data', function (done) {
-        let result = []
-        let reply = new Resp()
+        const result = []
+        const reply = new Resp()
 
         reply
           .on('data', function (data) {
@@ -193,7 +193,7 @@ function test (Resp) {
       })
 
       tman.it('new Resp(): with non resp buffer', function (done) {
-        let reply = new Resp()
+        const reply = new Resp()
 
         reply
           .on('error', function (error) {
@@ -206,8 +206,8 @@ function test (Resp) {
       })
 
       tman.it('new Resp(): with error data', function (done) {
-        let result = []
-        let reply = new Resp()
+        const result = []
+        const reply = new Resp()
 
         reply
           .on('data', function (data) {
@@ -231,9 +231,9 @@ function test (Resp) {
       tman.it('new Resp(): chaos', function (done) {
         this.timeout(100000)
 
-        let result = []
-        let reply = new Resp()
-        let buf = Resp.encodeArray([
+        const result = []
+        const reply = new Resp()
+        const buf = Resp.encodeArray([
           Resp.encodeNull(),
           Resp.encodeString('OKOKOKOK'),
           Resp.encodeInteger(123456789),
@@ -263,7 +263,7 @@ function test (Resp) {
           })
 
         let start = 0
-        let length = bufs.length
+        const length = bufs.length
         consumer()
 
         function consumer () {
@@ -279,10 +279,10 @@ function test (Resp) {
       tman.it('new Resp(): bench', function (done) {
         this.timeout(100000)
 
-        let result = []
-        let reply = new Resp()
+        const result = []
+        const reply = new Resp()
 
-        let buf = Resp.encodeArray([
+        const buf = Resp.encodeArray([
           Resp.encodeString('OK'),
           Resp.encodeString('QUEUED'),
           Resp.encodeString('QUEUED'),

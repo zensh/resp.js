@@ -14,7 +14,7 @@ class Client extends EventEmitter {
     this._resp = new Resp()
       .on('error', (error) => this.emit('error', error))
       .on('data', (data) => {
-        let cb = this._queue.shift()
+        const cb = this._queue.shift()
         if (!cb) return this.emit('error', new Error('Unexpected reply: ' + data))
         if (data instanceof Error) cb[1](data)
         else cb[0](data)
@@ -42,31 +42,31 @@ class Client extends EventEmitter {
 
 // tman example/redis_client.js
 tman('simple redis client', function () {
-  let client = new Client(6379)
+  const client = new Client(6379)
 
   tman.it('info', function * () {
-    let res = yield client.cmd('info')
+    const res = yield client.cmd('info')
     console.log('INFO:', res)
     assert.ok(res.indexOf('redis_version') > 0)
   })
 
   tman.it('set', function * () {
-    let res = yield client.cmd('set', 'resp', 'hello')
+    const res = yield client.cmd('set', 'resp', 'hello')
     console.log('SET:', res)
     assert.strictEqual(res, 'OK')
   })
 
   tman.it('get', function * () {
-    let res = yield client.cmd('get', 'resp')
+    const res = yield client.cmd('get', 'resp')
     console.log('GET:', res)
     assert.strictEqual(res, 'hello')
   })
 
   tman.it('ping', function * () {
     let count = 10000
-    let time = Date.now()
+    const time = Date.now()
     while (count--) {
-      let res = yield client.cmd('ping')
+      const res = yield client.cmd('ping')
       assert.strictEqual(res, 'PONG')
     }
     console.log('PING:', (10000 * 1000 / (Date.now() - time)).toFixed(2), 'ops/sec')
