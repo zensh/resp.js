@@ -112,13 +112,13 @@ function test (Resp) {
         assert.strictEqual(Resp.decode(Resp.encodeBufBulk(Buffer.from('123'))), '123')
         assert.strictEqual(Resp.decode(Resp.encodeBufBulk(Buffer.from('123')), true).equals(Buffer.from('123')), true)
 
-        assert.deepEqual(Resp.decode(Resp.encodeArray([])), [])
-        assert.deepEqual(Resp.decode(Resp.encodeArray([[], [[]]])), [[], [[]]])
-        assert.deepEqual(Resp.decode(Resp.encodeArray([Resp.encodeNull(), Resp.encodeInteger(123)])), [null, 123])
-        assert.deepEqual(Resp.decode(Resp.encodeArray([Resp.encodeNull(), Resp.encodeInteger(123)]), true), [null, 123])
+        assert.deepStrictEqual(Resp.decode(Resp.encodeArray([])), [])
+        assert.deepStrictEqual(Resp.decode(Resp.encodeArray([[], [[]]])), [[], [[]]])
+        assert.deepStrictEqual(Resp.decode(Resp.encodeArray([Resp.encodeNull(), Resp.encodeInteger(123)])), [null, 123])
+        assert.deepStrictEqual(Resp.decode(Resp.encodeArray([Resp.encodeNull(), Resp.encodeInteger(123)]), true), [null, 123])
 
-        assert.deepEqual(Resp.decode(Resp.encodeRequest(['set', 'key', 123])), ['set', 'key', '123'])
-        assert.deepEqual(Resp.decode(Resp.encodeRequest(['set', 'key', 123]), true),
+        assert.deepStrictEqual(Resp.decode(Resp.encodeRequest(['set', 'key', 123])), ['set', 'key', '123'])
+        assert.deepStrictEqual(Resp.decode(Resp.encodeRequest(['set', 'key', 123]), true),
           [Buffer.from('set'), Buffer.from('key'), Buffer.from('123')])
 
         assert.throws(function () { Resp.decode() })
@@ -145,7 +145,7 @@ function test (Resp) {
             result.push(data)
           })
           .on('finish', function () {
-            assert.deepEqual(result, ['0', '2', '', '中文', [], [[]], ['set', 'key', '123']])
+            assert.deepStrictEqual(result, ['0', '2', '', '中文', [], [[]], ['set', 'key', '123']])
             done()
           })
 
@@ -160,7 +160,7 @@ function test (Resp) {
       })
 
       tman.it('new Resp({bufBulk: true})', function (done) {
-        const reply = new Resp({bufBulk: true})
+        const reply = new Resp({ bufBulk: true })
 
         reply
           .on('data', function (data) {
@@ -182,7 +182,7 @@ function test (Resp) {
             result.push(data)
           })
           .on('finish', function () {
-            assert.deepEqual(result, ['中文', '', '123'])
+            assert.deepStrictEqual(result, ['中文', '', '123'])
             done()
           })
 
@@ -218,7 +218,7 @@ function test (Resp) {
             result.push('')
           })
           .on('finish', function () {
-            assert.deepEqual(result, ['', '', '123'])
+            assert.deepStrictEqual(result, ['', '', '123'])
             done()
           })
 
@@ -247,7 +247,7 @@ function test (Resp) {
 
         reply
           .on('data', function (data) {
-            assert.deepEqual(data, [
+            assert.deepStrictEqual(data, [
               null,
               'OKOKOKOK',
               123456789,
@@ -294,7 +294,7 @@ function test (Resp) {
 
         reply
           .on('data', function (data) {
-            assert.deepEqual(data, ['OK', 'QUEUED', 'QUEUED', ['OK', 1]])
+            assert.deepStrictEqual(data, ['OK', 'QUEUED', 'QUEUED', ['OK', 1]])
             result.push(data)
           })
           .on('finish', function () {
