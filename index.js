@@ -165,10 +165,11 @@ function parseBuffer (buf, index, bufBulk) {
   if (index >= buf.length) return null
 
   switch (buf[index]) {
-    case 43: // '+'
+    case 43: { // '+'
       return readBuffer(buf, index + 1)
+    }
 
-    case 45: // '-'
+    case 45: { // '-'
       result = readBuffer(buf, index + 1)
       if (result == null) return result
       let fragment = result.content.match(/^(\S+) ([\s\S]+)$/)
@@ -176,16 +177,18 @@ function parseBuffer (buf, index, bufBulk) {
       result.content = new Error(fragment[2])
       result.content.name = result.content.code = fragment[1]
       return result
+    }
 
-    case 58: // ':'
+    case 58: { // ':'
       result = readBuffer(buf, index + 1)
       if (result == null) return result
       num = parseInteger(result.content)
       if (num == null) return new Error('Parse ":" failed')
       result.content = num
       return result
+    }
 
-    case 36: // '$'
+    case 36: { // '$'
       result = readBuffer(buf, index + 1)
       if (result == null) return result
       num = parseInteger(result.content)
@@ -204,8 +207,9 @@ function parseBuffer (buf, index, bufBulk) {
         result.index = endIndex + 2
       }
       return result
+    }
 
-    case 42: // '*'
+    case 42: { // '*'
       result = readBuffer(buf, index + 1)
       if (result == null) return result
       num = parseInteger(result.content)
@@ -226,6 +230,7 @@ function parseBuffer (buf, index, bufBulk) {
         }
       }
       return result
+    }
   }
   return new Error('Invalid Chunk: parse failed')
 }
