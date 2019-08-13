@@ -4,7 +4,6 @@ const assert = require('assert')
 const tman = require('tman')
 
 test(require('..'))
-test(require('@std/esm')(module)('../index.mjs').default)
 
 function test (Resp) {
   tman.suite('Respjs', function () {
